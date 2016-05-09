@@ -7,7 +7,9 @@ ReferenceAlias Property pah_stub Auto
 ObjectReference Property ReleaseMarker Auto
 ReferenceAlias Property RelaseMarker  Auto
 
+Faction Property zbfFactionSlave Auto
 Faction Property PlayerFaction Auto
+Faction Property PlayerFollowerFaction Auto
 Faction Property PAHPlayerSlaveFaction Auto
 
 Faction Property PAHBEFollowing Auto
@@ -23,6 +25,7 @@ Faction Property PAHTrainCombat Auto
 Faction Property PAHTrainAnger Auto
 Faction Property PAHTrainRespect Auto
 Faction Property PAHTrainPose Auto
+Faction Property PAHTrainSex Auto
 
 Faction Property PAHShouldBeRespectful Auto
 Faction Property PAHShouldFightForPlayer Auto
@@ -109,7 +112,9 @@ Event AfterAssign()
 	__mind = None
 	manual_control_mode = false
 	actor_alias.AddToFaction(PAHPlayerSlaveFaction)
-	actor_alias.AddToFaction(PlayerFaction)
+	actor_alias.AddToFaction(zbfFactionSlave)
+;why add the next line---for now i'm disabling this to prevent issues with home sweet home
+;	actor_alias.AddToFaction(PlayerFaction)
 	actor_alias.AddToFaction(PAH.dunPrisonerFaction)
 	actor_alias.AddToFaction(PAH.WINeverFillAliasesFaction)
 	If PAH.DLC1ThrallFaction != None
@@ -129,7 +134,8 @@ Event AfterAssign()
 	pose_training = actor_alias.GetFactionRank(PAHTrainPose)
 	should_be_respectful = actor_alias.IsInFaction(PAHShouldBeRespectful)
 	should_fight_for_player = actor_alias.IsInFaction(PAHShouldFightForPlayer)
-	sex_training = actor_alias.GetFactionRank(PAH.PAHTrainSex)
+	sex_training = actor_alias.GetFactionRank(PAHTrainSex)	
+;	sex_training = actor_alias.GetFactionRank(PAH.PAHTrainSex)
 	oral_training = actor_alias.GetFactionRank(PAH.PAHTrainOral)
 	vaginal_training = actor_alias.GetFactionRank(PAH.PAHTrainVaginal)
 	anal_training = actor_alias.GetFactionRank(PAH.PAHTrainAnal)
@@ -754,9 +760,14 @@ EndFunction
 Function releaseSlave()
 	Actor releasedSlave = actor_alias.the_actor
 	Release()
-	releasedSlave.RemoveFromAllFactions()
-	releasedSlave.PathToReference(RelaseMarker.GetReference(), 1)
-	releasedSlave.DeleteWhenAble()
+	if ((releasedSlave.GetFactionRank(PAHSubmission) >= 100) && (releasedSlave.GetFactionRank(PAHTrainRespect) >= 64))
+		releasedSlave.RemoveFromAllFactions()
+		releasedSlave.AddToFaction(PlayerFollowerFaction)
+	else
+		releasedSlave.RemoveFromAllFactions()
+		;releasedSlave.PathToReference(ReleaseMarker.GetReference(), 1)
+		releasedSlave.DeleteWhenAble()
+	EndIf
 EndFunction
 
 ; ### Pose Handling ###
@@ -1453,6 +1464,30 @@ Function resetSlave()
 	behaviour = "tied"
 	EndBehaviour()
 
+	__actor_alias = (self as ReferenceAlias) as PAHActorAlias
+	manual_control_mode = false
+	If PAHPlayerSlaveFaction != None
+		actor_alias.AddToFaction(PAHPlayerSlaveFaction)
+	EndIf
+	If zbfFactionSlave != None
+		actor_alias.AddToFaction(zbfFactionSlave)
+	EndIf
+	If PAH.dunPrisonerFaction != None
+		actor_alias.AddToFaction(PAH.dunPrisonerFaction)
+	EndIf
+	If PAH.WINeverFillAliasesFaction != None
+		actor_alias.AddToFaction(PAH.WINeverFillAliasesFaction)
+	EndIf
+	If PAH.DLC1ThrallFaction != None
+		actor_alias.AddToFaction(PAH.DLC1ThrallFaction)
+	EndIf
+	actor_alias.IgnoreFriendlyHits(true)
+	actor_alias.SetNotShowOnStealthMeter(true)
+	actor_alias.allow_dialogue_in_combat = true
+
 	behaviour = beh
+	SetInitialBehaviour()
+	OnUpdateGameTime()
+
 	Debug.Notification(actor_alias.getDisplayName() + " reset")
 EndFunction
