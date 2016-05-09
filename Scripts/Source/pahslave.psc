@@ -7,6 +7,7 @@ ReferenceAlias Property pah_stub Auto
 ObjectReference Property ReleaseMarker Auto
 ReferenceAlias Property RelaseMarker  Auto
 
+Faction Property zbfFactionSlave Auto
 Faction Property PlayerFaction Auto
 Faction Property PAHPlayerSlaveFaction Auto
 
@@ -109,7 +110,9 @@ Event AfterAssign()
 	__mind = None
 	manual_control_mode = false
 	actor_alias.AddToFaction(PAHPlayerSlaveFaction)
-	actor_alias.AddToFaction(PlayerFaction)
+	actor_alias.AddToFaction(zbfFactionSlave)
+;why add the next line---for now i'm disabling this to prevent issues with home sweet home
+;	actor_alias.AddToFaction(PlayerFaction)
 	actor_alias.AddToFaction(PAH.dunPrisonerFaction)
 	actor_alias.AddToFaction(PAH.WINeverFillAliasesFaction)
 	If PAH.DLC1ThrallFaction != None
