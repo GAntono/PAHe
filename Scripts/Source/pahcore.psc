@@ -22,6 +22,8 @@ Faction Property PAHTrainOral Auto Hidden
 Faction Property PAHTrainVaginal Auto Hidden
 Faction Property PAHTrainFear Auto Hidden
 
+Faction Property PAHPlayerSlaveFaction Auto
+
 Faction Property sexSlaves Auto Hidden
 Faction Property Stormcloaks Auto
 Faction Property ImperialSoldiers Auto
@@ -128,9 +130,18 @@ Event OnPlayerLoadGame()
 	_dd_collar = Game.GetFormFromFile(0x3DF7, "Devious Devices - Assets.esm") As Keyword
 
 	defeatActive = Game.GetFormFromFile(0x5c666, "SexLabDefeat.esp") as Keyword
+	If (Game.GetFormFromFile(0x3fc36, "SexLabAroused.esm") as Faction)
+		Debug.trace("Found Aroused")
+		Debug.notification("Found Aroused")
+	EndIf
+	If (Game.GetFormFromFile(0xd62, "SexLab Attraction.esm") as Faction)
+		Debug.trace("Found Attraction")
+		Debug.notification("Found Attraction")
+	EndIf
 	Debug.trace("====================PAHExtension: End of soft dependencies.==========================")
 	registerKeys()
-	GetSlaveCount()
+	updateSlaveArray()
+	registerSlavesForEvents()
 	Debug.trace("====================PAHExtension: Startup Process finished.==========================")
 EndEvent
 
@@ -151,6 +162,16 @@ Function registerKeys()
 	If Config.whistleKey != -1
 		RegisterForKey(config.whistleKey)
 	EndIf
+EndFunction
+
+Function registerSlavesForEvents()
+	int i = 0
+	while i < slaveArray.length
+;		PAHSlave slave = slaveArray[i]
+;		slave.registerSexEvent()
+		slaveArray[i].registerSexEvent()
+		i += 1
+	EndWhile
 EndFunction
 
 Event OnKeyDown(Int KeyCode)
@@ -177,11 +198,11 @@ EndFunction
 Function getSlaveCandidateByKeypress()
 	Actor Target = GetCurrentCrosshairRef() as Actor
 	If Target
-		If player.IsSneaking() && !player.IsDetectedBy(target) && !target.HasKeywordString("testChick") && !target.IsBleedingOut()
-			OverwhelmTarget(target)
-		Else
+;		If player.IsSneaking() && !player.IsDetectedBy(target) && !target.HasKeywordString("testChick") && !target.IsBleedingOut()
+;			OverwhelmTarget(target)
+;		Else
 			CaptureSpell.Cast(player, Target)
-		EndIf
+;		EndIf
 	Else
 		CaptureSpell.Cast(player)
 	EndIf
@@ -571,12 +592,26 @@ Function switchActors(Actor original, Actor clone)
 	clone.MoveTo(original)
 	clone.SetPosition(original.GetPositionX(), original.GetPositionY(), original.GetPositionZ())
 
-	original.Disable()
-	original.MoveTo(CloneMarker)
-	original.EnableNoWait()
+	RPNodes.transferNode(original, clone)
+	If JContainers.isInstalled() && SlaveTats.Version() != ""
+		int array = JArray.object()
+		JValue.retain(array)
+		SlaveTats.query_applied_tattoos(original, 0, array)
+		int index = JArray.count(array)
+		while index > 0
+			index -= 1
+			SlaveTats.add_tattoo(clone, JArray.getObj(array, index), silent = true)
+		endWhile
+		SlaveTats.synchronize_tattoos(clone, true)
+		JValue.release(array)
+	EndIf
+	
 	If original == slaveCandidate.getActorRef()
 		slaveCandidate.clear()
 	EndIf
+	original.Disable()
+	original.MoveTo(CloneMarker)
+	original.EnableNoWait()
 	original.EndDeferredKill()
 	original.KillEssential(player)
 	Debug.SendAnimationEvent(clone, "BleedOutStart")

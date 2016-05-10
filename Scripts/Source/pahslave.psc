@@ -117,7 +117,6 @@ Event AfterAssign()
 	EndIf
 	actor_alias.IgnoreFriendlyHits(true)
 	actor_alias.SetNotShowOnStealthMeter(true)
-;	actor_alias.SetRelationshipRank(Game.GetPlayer(), 0)
 	actor_alias.StopCombat()
 	actor_alias.AllowCombat(false)
 	actor_alias.allow_dialogue_in_combat = true
@@ -165,7 +164,6 @@ Event OnLoad()
 	registerForWhistle()
 	actor_alias.IgnoreFriendlyHits(true)
 	actor_alias.SetNotShowOnStealthMeter(true)
-;	actor_alias.SetRelationshipRank(Game.GetPlayer(), 4)
 	actor_alias.StopCombat()
 EndEvent
 
@@ -247,7 +245,9 @@ Event OnStartPunishment(String type, string reason)
 EndEvent
 
 Event OnEndPunishment(String type, Float severity, string reason = "")
+EndEvent
 
+Event OnGainLOS(Actor akViewer, ObjectReference akTarget)
 EndEvent
 
 ; ### Behaviour Handling ###
@@ -357,9 +357,18 @@ State wait_sandbox
 	Function StartBehaviour()
 		actor_alias.AddToFaction(PAHBEWaiting)
 		actor_alias.Sandbox()
+		RegisterForSingleLOSGain(GetActorRef(), Game.GetPlayer())
 	EndFunction
+	
+	Event OnGainLOS(Actor akViewer, ObjectReference akTarget)
+		If randomFloat() < (submission / 100)
+			TrainSubmission(0.5)
+			wait()
+		EndIf
+	EndEvent
 
 	Function EndBehaviour()
+		UnregisterForLOS(GetActorRef(), Game.GetPlayer())
 		actor_alias.RemoveFromFaction(PAHBEWaiting)
 	EndFunction
 EndState
@@ -468,36 +477,46 @@ State tied
 		ChangeTiePose("PAHETieUpEnter")
 		RegisterForAnimEvent()
 		RegisterForSingleUpdateGameTime(0.5)
-		gameTime = Utility.GetCurrentGameTime()
+		gameTime = GetCurrentGameTime()
 		actor_alias.SetCanChangeStates(false)
 	EndFunction
 	Function OnUpdateGameTime()
-		If mind.StartMovingByFormula()
-			If breakingRestraint
-				TieUp(None, Enter = False)
-				If !(canRunAway() && mind.RunAwayByFormula())
-					waitSandbox()
+		If cuffs
+			If mind.StartMovingByFormula()
+				RegisterForSingleLOSGain(GetActorRef(), Game.GetPlayer())
+				If breakingRestraint
+					TieUp(None, Enter = False)
+					If !(canRunAway() && mind.RunAwayByFormula())
+						waitSandbox()
+					EndIf
+				Else
+					If mind.CanBreakRestraint(cuffs)
+						breakingRestraint = true
+					EndIf
+					TrainSubmission(0.5)
+					struggle = true
+					PlayTieUpAnimation()
 				EndIf
 			Else
-				If mind.CanBreakRestraint(cuffs)
-					breakingRestraint = true
-				EndIf
+				UnregisterForLOS(GetActorRef(), Game.GetPlayer())
 				TrainSubmission(0.5)
-				struggle = true
+				TrainPose(0.5)
+				struggle = false
 				PlayTieUpAnimation()
 			EndIf
+	
+			If (gameTime - GetCurrentGameTime()) * 24 >= 1
+				gameTime = gameTime + (0.5 / 24)
+				OnUpdateGameTime()
+			Else
+				RegisterForSingleUpdateGameTime(0.5)
+			EndIf
 		Else
-			TrainSubmission(0.5)
-			TrainPose(0.5)
-			struggle = false
-			PlayTieUpAnimation()
-		EndIf
-
-		If (gameTime - Utility.GetCurrentGameTime()) * 24 >= 1
-			gameTime = gameTime + (0.5 / 24)
-			OnUpdateGameTime()
-		Else
-			RegisterForSingleUpdateGameTime(0.5)
+			If randomFloat() > 0.5
+				FollowPlayer()
+			else
+				wait()
+			EndIf
 		EndIf
 	EndFunction
 	Event OnAnimationEvent(ObjectReference akSource, string asEventName)
@@ -509,6 +528,15 @@ State tied
 		Calm(GetActorRef())
 		PlayTieUpAnimation()
 	EndEvent
+	
+	Event OnGainLOS(Actor akViewer, ObjectReference akTarget)
+		If randomFloat() < submission / 100
+			TrainSubmission(0.5)
+			struggle = false
+			PlayTieUpAnimation()
+		EndIf
+	EndEvent
+
 ;	Event OnItemAdded(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
 ;		If akBaseItem.HasKeyWordString("zbfWornDevice")
 ;			GetActorRef().EquipItem(akBaseItem, True)
@@ -521,6 +549,7 @@ State tied
 		EndIf
 	EndEvent
 	Function EndBehaviour()
+		UnregisterForLOS(GetActorRef(), Game.GetPlayer())
 		TieUp(None, Enter = False)
 	EndFunction
 EndState
@@ -813,7 +842,7 @@ Function TestShouldHaveFought()
 			bHasFought = true
 		EndIf
 	ElseIf bHasFought
-		TrainCombat(2)
+		TrainCombat(1)
 		bHasFought = false
 	EndIf
 EndFunction
@@ -1031,6 +1060,56 @@ Function TellOff(string reason = "")
 EndFunction
 
 ; ### Training ###
+Event handleSexEvent(Form TrackedForm, int tid)
+	sslThreadController controller = PAH.SexLab.GetController(tid)
+	sslBaseAnimation anim = controller.Animation
+	
+	While anim == None
+		Utility.wait(1)
+		anim = controller.Animation
+	EndWhile
+
+	int trainCount = 0
+	bool bTrainAnal = false
+	bool bTrainOral = false
+	bool bTrainVaginal = false
+
+	int multiplier = 1
+	If (controller.GetVictim() == GetActorRef())
+		multiplier = 2
+	EndIf
+	If anim.HasTag("Anal")
+		trainCount += 1
+		bTrainAnal = true
+	EndIf
+	If anim.HasTag("Oral")
+		trainCount += 1
+		bTrainOral = true
+	EndIf
+	If anim.HasTag("Vaginal")
+		trainCount += 1
+		bTrainVaginal = true
+	EndIf
+
+	If bTrainAnal
+		trainAnal(5 * multiplier / trainCount)
+	EndIf
+	If bTrainOral
+		trainOral(5 * multiplier / trainCount)
+	EndIf
+	If bTrainVaginal
+		trainVaginal(5 * multiplier / trainCount)
+	EndIf
+EndEvent
+
+Function registerSexEvent()
+	PAH.SexLab.untrackActor(getActorRef(), "PAH" + getActorRef().GetFormID())
+	UnregisterForModEvent("PAH" + getActorRef().GetFormID() + "_Added")
+
+	PAH.SexLab.trackActor(getActorRef(), "PAH" + getActorRef().GetFormID())
+	RegisterForModEvent("PAH" + getActorRef().GetFormID() + "_Added", "handleSexEvent")
+EndFunction
+
 Float __submission = 0.0
 Float Property submission
 	Float Function get()
@@ -1224,7 +1303,7 @@ Float Property sex_training
 		return __sex_training
 	EndFunction
 	Function set(Float value)
-		If actor_alias.the_actor.GetActorBase().GetSex() == 0
+		If actor_alias.GetSex() == 0
 			__sex_training = (oral_training + anal_training) / 2
 		Else
 			__sex_training = (oral_training + vaginal_training + anal_training) / 3
@@ -1240,8 +1319,7 @@ Float Property sex_training
 EndProperty
 
 Function TrainSex(Float base_amount)
-	Float multiplier = 0.1 + (0.9*(1-(sex_training/100)))
-	sex_training += (base_amount * multiplier)
+	sex_training = 0
 EndFunction
 
 Float __fear_training = 0.0

@@ -30,7 +30,7 @@ Function punish(Actor _target, Actor _player, String _tag = "", bool _aggressive
 		tag = tag + ", Aggressive"
 	EndIf
 
-	train(_target, _tag, aggressive)
+;	train(_target, _tag, aggressive)
 
 	If _player.IsWeaponDrawn()
 		_player.SheatheWeapon()
