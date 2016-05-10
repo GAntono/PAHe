@@ -3,11 +3,23 @@ Scriptname PAH_MCM extends SKI_ConfigBase
 PAHCore Property PAH Auto
 PAHBootstrapScript Property Reboot Auto
 
-String version = "0.1H RC 5.0"
+String version = "0.1H RC 5.2"
+String testVersion = "test5"
+
+Int maxSub_OID
 
 Int fleeToggle_OID
 Int healthToggle_OID
 Int bleedOutToggle_OID
+Int sleepToggle_OID
+Int paralyzeToggle_OID
+
+bool Property fleeToggle = true Auto Hidden
+bool Property healthToggle = true Auto Hidden
+bool Property bleedOutToggle = true Auto Hidden
+bool Property sleepToggle = true Auto Hidden
+bool Property paralyzeToggle = true Auto Hidden
+
 Int leashToggle_OID
 Int rebootToggle_OID
 Int statSpellToggle_OID
@@ -16,11 +28,13 @@ Int debugToggle_OID
 Int resetSlaveList_OID
 Int resetSlave_OID
 Int hotKey_OID
+Int modifierKey_OID
 Int whistleKey_OID
 Int rename_OID
 Int renameToggle_OID
 Int alwaysAggroToggle_OID
 Int showSlaveCountToggle_OID
+
 Int _hotkey = -1
 Int Property hotkey Hidden
 	Int Function Get()
@@ -33,9 +47,14 @@ Int Property whistleKey Hidden
 		return _whistleKey
 	EndFunction
 EndProperty
+Int _modifierKey = -1
+Int Property modifierKey Hidden
+	Int Function Get()
+		return _modifierKey
+	EndFunction
+EndProperty
 
 Int[] slave_OID
-;PAHSlave[] slave_array
 
 int Property runAwayValue = 60 Auto Hidden
 int Property severity = 100 Auto Hidden
@@ -43,14 +62,10 @@ int Property followerTrainingEfficiency = 50 Auto Hidden
 
 float Property postRapeDelay = 30.0 Auto Hidden
 
-bool Property fleeToggle = true Auto Hidden
-bool Property healthToggle = true Auto Hidden
-bool Property bleedOutToggle = true Auto Hidden
 bool Property leashToggle = false Auto Hidden
 bool Property renameToggle = false Auto Hidden
 bool Property statSpellToggle = false Auto Hidden
 bool Property showSlaveCountToggle = false Auto Hidden
-bool jcInstalled = false
 bool _debugToggle = true
 bool Property debugToggle
 	bool Function Get()
@@ -68,62 +83,64 @@ int currentSlave_OID = -1
 int forcedReset = -1
 string[] pageNames
 
+int disableFlag
+
 Event OnGameReload()
 	parent.OnGameReload()
-
-;	If hotKey
-;		PAH.RegisterForKey(hotKey)
-;	EndIf
-
-	pageNames = new String[3]
-	pageNames[0] = "Options"
-	pageNames[1] = "Slaves"
-	pageNames[2] = version
-
-;	MainQuest.Maintenance()
 EndEvent
 
 Event OnConfigOpen()
-	Pages = pageNames
+	disableFlag = OPTION_FLAG_DISABLED
 
-	Debug.trace("==========PAH Extension: Ignore cast errors==========")
-	jcInstalled = JContainers.isInstalled()
-	version = "0.1H RC 5.0"
-	Debug.trace("==========PAH Extension: End of cast errors==========")
+	pageNames = new String[4]
+	pageNames[0] = "Options"
+	pageNames[1] = "Enslavement"
+	pageNames[2] = "Slaves"
+	pageNames[3] = version + testVersion
+
+	Pages = pageNames
 EndEvent
 
 event OnPageReset(string page)
 	if page == pageNames[0]
 		UpdateOptionsPage()
 	elseIf page == pageNames[1]
+		UpdateSettings()
+	elseIf page == pageNames[2]
 		UpdateSlavesPage()
 	else
 		OnPageReset(pageNames[0])
 	EndIf
 EndEvent
 
-Function UpdateOptionsPage()
-	int disableFlag = OPTION_FLAG_DISABLED
+Function UpdateSettings()
+	SetCursorFillMode(TOP_TO_BOTTOM)
+	fleeToggle_OID = AddToggleOption("$PAHE_SettingName_FleeToggle", Game.getPlayer().hasPerk(PAH.EnslavePerks[0]))
+	healthToggle_OID = AddToggleOption("$PAHE_SettingName_HealthToggle", Game.getPlayer().hasPerk(PAH.EnslavePerks[1]))
+	bleedOutToggle_OID = AddToggleOption("$PAHE_SettingName_BleedOutToggle", Game.getPlayer().hasPerk(PAH.EnslavePerks[2]), disableFlag)
+	sleepToggle_OID = AddToggleOption("$PAHE_SettingName_SleepToggle", Game.getPlayer().hasPerk(PAH.EnslavePerks[3]))
+	paralyzeToggle_OID = AddToggleOption("$PAHE_SettingName_ParalyzeToggle", Game.getPlayer().hasPerk(PAH.EnslavePerks[4]))
 
+	SetCursorPosition(1)
+	AddSliderOptionST("CAP_health", "$PAHE_SettingName_HealthPerc", globalHealthPerc.getValue() * 100)
+EndFunction
+
+Function UpdateOptionsPage()
 	if !Reboot
 		Reboot = Game.GetFormFromFile(0x000CF32, "paradise_halls.esm") As PAHBootstrapScript
 	EndIf
 
 	SetCursorFillMode(TOP_TO_BOTTOM)
 	AddHeaderOption("Toggles")
-;	fleeToggle_OID = AddToggleOption("$PAHE_SettingName_FleeToggle", fleeToggle, disableFlag)
-;	healthToggle_OID = AddToggleOption("$PAHE_SettingName_HealthToggle", healthToggle, disableFlag)
-;	bleedOutToggle_OID = AddToggleOption("$PAHE_SettingName_BleedOutToggle", bleedOutToggle, disableFlag)
 	leashToggle_OID = AddToggleOption("$PAHE_SettingName_LeashToggle", leashToggle)
 	alwaysAggroToggle_OID = AddToggleOption("$PAHE_SettingName_alwaysAggroToggle", PAH.bAlwaysAggressive)
 	showSlaveCountToggle_OID = AddToggleOption("$PAHE_SettingName_showSlaveCountToggle", showSlaveCountToggle)
-	If jcInstalled
+	If PAH.jcInstalled
 		renameToggle_OID = AddToggleOption("$PAHE_SettingName_RenameToggle", renameToggle)
 	EndIf
 
 	AddHeaderOption("Sliders")
 	AddSliderOptionST("SLAVE_runaway", "$PAHE_SettingName_RunAway", runAwayValue)
-	AddSliderOptionST("CAP_health", "$PAHE_SettingName_HealthPerc", globalHealthPerc.getValue() * 100)
 	AddSliderOptionST("RAPE_time", "$PAHE_SettingName_RapeTimer", postRapeDelay)
 	AddSliderOptionST("PUN_severity", "$PAHE_SettingName_Severity", severity)
 	AddSliderOptionST("FOL_efficiency", "$PAHE_SettingName_Follower", followerTrainingEfficiency)
@@ -159,6 +176,7 @@ Function UpdateOptionsPage()
 	AddHeaderOption("Keys")
 	whistleKey_OID = AddKeyMapOption("$PAHE_SettingName_WhistleKey", whistleKey)
 	hotKey_OID = AddKeyMapOption("$PAHE_SettingName_Hotkey", hotkey)
+	modifierKey_OID = AddKeyMapOption("$PAHE_SettingName_modifierKey", modifierKey)
 EndFunction
 
 Function UpdateSlavesPage()
@@ -294,7 +312,9 @@ Function ListSlaveStats(int index)
 
 	If debugToggle
 		AddEmptyOption()
+		maxSub_OID = AddTextOption("Max Submission:", currentSlave.GetActorRef().GetDisplayName())
 		resetSlave_OID = AddTextOption("Reset Slave:", currentSlave.GetActorRef().GetDisplayName())
+		AddTextOption(StringUtil.Substring(currentSlave.GetActorRef().getVoiceType() + "", 12, StringUtil.Find(currentSlave.GetActorRef().getVoiceType() + "", " ", 12) - 12), "")
 	EndIf
 EndFunction
 
@@ -305,6 +325,10 @@ Event OnOptionHighLight(Int option)
 		SetInfoText("$PAHE_SettingInfo_HealthToggle")
 	ElseIf (option == bleedOutToggle_OID)
 		SetInfoText("$PAHE_SettingInfo_BleedOutToggle")
+	ElseIf (option == sleepToggle_OID)
+		SetInfoText("$PAHE_SettingInfo_SleepToggle")
+	ElseIf (option == paralyzeToggle_OID)
+		SetInfoText("$PAHE_SettingInfo_ParalyzeToggle")
 	ElseIf (option == leashToggle_OID)
 		SetInfoText("$PAHE_SettingInfo_LeashToggle")
 	ElseIf (option == rebootToggle_OID)
@@ -317,6 +341,8 @@ Event OnOptionHighLight(Int option)
 		SetInfoText("$PAHE_SettingInfo_debugToggle")
 	ElseIf (option == hotKey_OID)
 		SetInfoText("$PAHE_SettingInfo_Hotkey")
+	ElseIf (option == modifierKey_OID)
+		SetInfoText("$PAHE_SettingInfo_modifierKey")
 	ElseIf (option == whistleKey_OID)
 		SetInfoText("$PAHE_SettingInfo_WhistleKey")
 	ElseIf (option == renameToggle_OID)
@@ -329,25 +355,25 @@ Event OnOptionHighLight(Int option)
 EndEvent
 
 Event OnOptionSelect(Int option)
-	If CurrentPage == pageNames[1]
+	If CurrentPage == pageNames[2]
 		If (option == rename_OID)
 			UILIB_1 UILib = ((Self as Form) as UILIB_1)
 			String suggestedName = currentSlave.GetActorRef().getDisplayName()
-			If jcInstalled
+			If PAH.jcInstalled
 				string gender
 				If currentSlave.GetActorRef().GetLeveledActorBase().getSex() == 0
 					gender = "Male"
 				Else
 					gender = "Female"
 				EndIf
-				
+
 				string sRace = currentSlave.GetActorRef().getRace().getName()
 				string filename = gender + sRace
 
 				int jNames = JValue.readFromFile("Data/PAHE/" + filename + ".txt")
 				int rInt = Utility.RandomInt(0, JArray.count(jNames) - 1)
 				String name = JArray.getStr(jNames, rInt)
-	
+
 				If name != ""
 					suggestedName = name
 				EndIf
@@ -355,7 +381,7 @@ Event OnOptionSelect(Int option)
 
 			String sResult = UILib.ShowTextInput("Rename Slave", suggestedName)
 			If sResult != ""
-				currentSlave.GetActorRef().SetDisplayName(sResult)
+				currentSlave.SetDisplayName(sResult)
 				forcedReset = currentSlave_OID
 				ForcePageReset()
 			EndIf
@@ -363,21 +389,33 @@ Event OnOptionSelect(Int option)
 			ShowMessage("Close all menus to continue...", false)
 			Utility.wait(0.1)
 			currentSlave.resetSlave()
+		ElseIf (option == maxSub_OID)
+			currentSlave.submission = 100
+			forcedReset = currentSlave_OID
+			ForcePageReset()
 		Else
 			forcedReset = option
 			ForcePageReset()
 		EndIf
-	Else
+	ElseIf CurrentPage == pageNames[1]
 		If (option == fleeToggle_OID)
-			fleeToggle = !fleeToggle
-			SetToggleOptionValue(fleeToggle_OID, fleeToggle)
+			setPerk(0)
+			SetToggleOptionValue(fleeToggle_OID, Game.getPlayer().hasPerk(PAH.EnslavePerks[0]))
 		ElseIf (option == healthToggle_OID)
-			healthToggle = !healthToggle
-			SetToggleOptionValue(healthToggle_OID, healthToggle)
+			setPerk(1)
+			SetToggleOptionValue(healthToggle_OID, Game.getPlayer().hasPerk(PAH.EnslavePerks[1]))
 		ElseIf (option == bleedOutToggle_OID)
-			bleedOutToggle = !bleedOutToggle
-			SetToggleOptionValue(bleedOutToggle_OID, bleedOutToggle)
-		ElseIf (option == renameToggle_OID)
+			setPerk(2)
+			SetToggleOptionValue(bleedOutToggle_OID, Game.getPlayer().hasPerk(PAH.EnslavePerks[2]), disableFlag)
+		ElseIf (option == sleepToggle_OID)
+			setPerk(3)
+			SetToggleOptionValue(sleepToggle_OID, Game.getPlayer().hasPerk(PAH.EnslavePerks[3]))
+		ElseIf (option == paralyzeToggle_OID)
+			setPerk(4)
+			SetToggleOptionValue(paralyzeToggle_OID, Game.getPlayer().hasPerk(PAH.EnslavePerks[4]))
+		EndIf
+	Else
+		If (option == renameToggle_OID)
 			renameToggle = !renameToggle
 			SetToggleOptionValue(renameToggle_OID, renameToggle)
 		ElseIf (option == leashToggle_OID)
@@ -424,6 +462,10 @@ Event OnOptionKeyMapChange(int option, int keyCode, string conflictControl, stri
 		_whistleKey = keyCode
 		SetKeyMapOptionValue(whistleKey_OID, whistleKey)
 		PAH.RegisterForKey(whistleKey)
+	ElseIf (option == modifierKey_OID)
+		_modifierKey = keyCode
+		SetKeyMapOptionValue(modifierKey_OID, modifierKey)
+		PAH.RegisterForKey(modifierKey)
 	EndIf
 EndEvent
 
@@ -436,6 +478,10 @@ event OnOptionDefault(int option)
 		PAH.UnregisterForKey(_whistleKey)
 		_whistleKey = -1
 		SetKeyMapOptionValue(whistleKey_OID, whistleKey)
+	ElseIf (option == modifierKey_OID)
+		PAH.UnregisterForKey(_modifierKey)
+		_modifierKey = -1
+		SetKeyMapOptionValue(modifierKey_OID, modifierKey)
 	EndIf
 EndEvent
 
@@ -538,3 +584,13 @@ State FOL_efficiency
 		SetInfoText("$PAHE_SettingInfo_Follower")
 	EndEvent
 EndState
+
+Function setPerk(int index)
+	If Game.getPlayer().hasPerk(PAH.EnslavePerks[index])
+		Game.getPlayer().removePerk(PAH.EnslavePerks[index])
+		PAH.EnslavePerksToggle[index] = 0
+	Else
+		Game.getPlayer().AddPerk(PAH.EnslavePerks[index])
+		PAH.EnslavePerksToggle[index] = 1
+	EndIf
+EndFunction

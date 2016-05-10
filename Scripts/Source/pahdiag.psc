@@ -48,10 +48,16 @@ Function EquipInventory(Actor slave_actor)
 EndFunction
 
 Function restrain(Actor target, String pose, String strugglePose, Form cuff)
-	If target.GetItemCount(cuff) >= 1
-		target.removeItem(cuff, 1)
-	Else
-		Game.GetPlayer().removeItem(cuff, 1)
+	Form _cuff = cuff
+	If cuff == PAH.CuffsLeather
+		_cuff = Game.GetFormFromFile(0x800E4, "Skyrim.esm") as Form
+	EndIf
+	If _cuff != PAH.CuffsRope
+		If target.GetItemCount(_cuff) >= 1
+			target.removeItem(_cuff, 1)
+		Else
+			Game.GetPlayer().removeItem(_cuff, 1)
+		EndIf
 	EndIf
 	PAHSlave slave = PAH.GetSlave(target)
 	slave.TieUp(cuff, Aggressor = Game.GetPlayer(), DoAnimation = true)

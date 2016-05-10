@@ -164,13 +164,9 @@ EndEvent
 
 Event AfterAssign()
 	the_actor = GetActorRef()
-	if the_actor != actor_stub
-		__slave = None
-		__mind = None
-		__target_marker = None
-		current_action = ""
-		accompanying_player = false
-		leashed = false
+	if GetActorRef() != actor_stub
+		BeforeClear()
+		the_actor = GetActorRef()
 		aggression = the_actor.GetAv("aggression") as Int
 		confidence = the_actor.GetAv("confidence") as Int
 		assistance = the_actor.GetAv("assistance") as Int
@@ -186,12 +182,16 @@ Event BeforeClear()
 	the_actor = None
 	__slave = None
 	__mind = None
+	__target_marker = None
+	current_action = ""
+	accompanying_player = false
+	leashed = false
 EndEvent
 
 Function RemoveFromGame()
+	UnregisterForUpdate()
 	the_actor.Disable()
 	the_actor.DeleteWhenAble()
-	UnregisterForUpdate()
 	PAH.RemoveSlave(self)
 EndFunction
 
@@ -222,7 +222,9 @@ EndEvent
 
 Event OnUpdateGameTime()
 	if the_actor != actor_stub
-		the_actor.Enable()
+		If the_actor.isDisabled()
+			the_actor.Enable()
+		EndIf
 		RegisterForSingleUpdateGameTime(SecondsToGameHours(Utility.RandomFloat(game_time_update_min, game_time_update_max)))
 	endif
 EndEvent
@@ -382,8 +384,10 @@ Function Sandbox()
 EndFunction
 
 Function SandboxAtLeash()
-	target = leash_point
-	current_action = "sandbox"
+	If leash_point
+		target = leash_point
+		current_action = "sandbox"
+	EndIf
 EndFunction
 
 State sandbox
@@ -579,7 +583,7 @@ EndFunction
 Bool __naked = false
 Bool Property naked
 	Bool Function get()
-		return __naked
+		return IsInFaction(PAHNaked)
 	EndFunction
 	Function set(Bool value)
 		__naked = value
@@ -905,6 +909,10 @@ EndFunction
 
 Int Function getItemCount(Form akItem)
 	return the_actor.getItemCount(akItem)
+EndFunction
+
+Int Function getSex()
+	return the_actor.GetActorBase().GetSex()
 EndFunction
 
 ;### Utility ###

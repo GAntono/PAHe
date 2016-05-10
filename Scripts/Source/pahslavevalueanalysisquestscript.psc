@@ -38,6 +38,7 @@ Faction Property PAHTrainAnger Auto
 Faction Property PAHTrainCombat Auto
 Faction Property PAHTrainSex Auto
 Faction Property PAHTrainRespect Auto
+Faction Property PAHTrainPose Auto
 
 Function Calculate(Actor _slave)
 	slave = _slave
@@ -142,6 +143,10 @@ Function Calculate(Actor _slave)
     If (PAHTrainRespect == None)
         PAHTrainRespect = Game.GetFormFromFile(0x0005862b, "paradise_halls.esm") As Faction
     EndIf
+    If (PAHTrainPose == None)
+        PAHTrainPose = Game.GetFormFromFile(0x0005862b, "paradise_halls.esm") As Faction 
+	; 0x059BD5   <<too short, but that's what antono said was pahtrainpose
+    EndIf
 
 	Float fTrainMod = 1.0
 	fTrainMod *= ((slave.GetFactionRank(PAHSubmission) / 60.0) + 0.34)
@@ -149,6 +154,7 @@ Function Calculate(Actor _slave)
 	fTrainMod += (slave.GetFactionRank(PAHTrainCombat) / 100.0)
 	fTrainMod += (slave.GetFactionRank(PAHTrainSex) / 100.0)
 	fTrainMod += (slave.GetFactionRank(PAHTrainRespect) / 150.0)
+	fTrainMod += (slave.GetFactionRank(PAHTrainPose) / 100.0)
 	TrainingRating = 0
 	
 	Float fWeightMod = (slave.GetLeveledActorBase().GetWeight() / 50.0) + 0.5

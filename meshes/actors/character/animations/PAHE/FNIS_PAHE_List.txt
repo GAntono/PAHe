@@ -92,7 +92,7 @@ b -B1.0 PAHEEstrusExhaustedBack PAHEEstrusExhaustedBack.hkx
 '+ DefeatArrok_A2_S4 DefeatArrok_A2_S4.hkx
 
 '/// Choke & Kill
-'pa -D3.0,Tnpcsoundplay.NPCKillStruggle/1.0,Tnpcsoundplay.NPCKillShove/2.9 DefeatPASleeper DefeatPASleeper.hkx
+pa -D3.0,Tnpcsoundplay.NPCKillStruggle/1.0,Tnpcsoundplay.NPCKillShove/2.9 PAHEOverwhelm PAHEOverwhelm.hkx
 'km -D3.293000,Tnpcsoundplay.NPCKillStruggle/0.566000,Tnpcsoundplay.NPCKillShove/1.904000 DefeatKMNeckBreak DefeatKMNeckBreak.hkx
 
 '/// Cover self
