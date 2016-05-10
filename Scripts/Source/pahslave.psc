@@ -3,9 +3,8 @@ Import Utility
 
 ;### Constants ###
 PAHCore Property PAH Auto
-ReferenceAlias Property pah_stub Auto
-ObjectReference Property ReleaseMarker Auto
-ReferenceAlias Property RelaseMarker  Auto
+ReferenceAlias Property pah_stub Auto	Hidden
+ReferenceAlias Property ReleaseMarker  Auto	Hidden
 
 Faction Property PlayerFaction Auto
 Faction Property PAHPlayerSlaveFaction Auto
@@ -47,6 +46,7 @@ Keyword Property PAHPaingiver Auto
 Package Property DoNothing Auto
 
 Spell Property PAHLeashToSpell Auto
+Message Property slaveName Auto
 
 ;### Properties ###
 
@@ -78,7 +78,7 @@ PAHSlaveMind Property mind
 	EndFunction
 EndProperty
 
-Actor Property backpack_mule Auto
+;Actor Property backpack_mule Auto	Hidden
 Bool manual_control_mode = false
 
 Function DisableAutomaticBehaviour(Bool value = true)
@@ -103,7 +103,7 @@ EndEvent
 
 Event AfterAssign()
 										If PAH.enableDebug
-											debug.trace("[PAHExtension slave] After Assign")
+											debug.trace("[PAHESlave] After Assign")
 										EndIf
 	__actor_alias = (self as ReferenceAlias) as PAHActorAlias
 	__mind = None
@@ -117,7 +117,6 @@ Event AfterAssign()
 	EndIf
 	actor_alias.IgnoreFriendlyHits(true)
 	actor_alias.SetNotShowOnStealthMeter(true)
-;	actor_alias.SetRelationshipRank(Game.GetPlayer(), 0)
 	actor_alias.StopCombat()
 	actor_alias.AllowCombat(false)
 	actor_alias.allow_dialogue_in_combat = true
@@ -134,14 +133,14 @@ Event AfterAssign()
 	vaginal_training = actor_alias.GetFactionRank(PAH.PAHTrainVaginal)
 	anal_training = actor_alias.GetFactionRank(PAH.PAHTrainAnal)
 	fear_training = actor_alias.GetFactionRank(PAH.PAHTrainFear)
-
+;	setDisplayName(getActorRef().getDisplayName())
+	
 	ticks_since_last_punished = 0
 
 	SetInitialBehaviour()
 	OnUpdateGameTime()
 										If PAH.enableDebug
-											debug.trace("[PAHExtension slave] After Assign Done")
-											debug.trace("[PAHExtension slave] " + self + " is " + actor_alias.GetActorRef())
+											debug.trace("[PAHESlave] After Assign: " + self + " is " + GetActorRef())
 										EndIf
 EndEvent
 
@@ -165,7 +164,6 @@ Event OnLoad()
 	registerForWhistle()
 	actor_alias.IgnoreFriendlyHits(true)
 	actor_alias.SetNotShowOnStealthMeter(true)
-;	actor_alias.SetRelationshipRank(Game.GetPlayer(), 4)
 	actor_alias.StopCombat()
 EndEvent
 
@@ -247,12 +245,14 @@ Event OnStartPunishment(String type, string reason)
 EndEvent
 
 Event OnEndPunishment(String type, Float severity, string reason = "")
+EndEvent
 
+Event OnGainLOS(Actor akViewer, ObjectReference akTarget)
 EndEvent
 
 ; ### Behaviour Handling ###
 String __behaviour = ""
-String Property behaviour
+String Property behaviour	Hidden
 	String Function get()
 		return __behaviour
 	EndFunction
@@ -357,9 +357,18 @@ State wait_sandbox
 	Function StartBehaviour()
 		actor_alias.AddToFaction(PAHBEWaiting)
 		actor_alias.Sandbox()
+		RegisterForSingleLOSGain(GetActorRef(), Game.GetPlayer())
 	EndFunction
+	
+	Event OnGainLOS(Actor akViewer, ObjectReference akTarget)
+		If randomFloat() < (submission / 100)
+			TrainSubmission(0.5)
+			wait()
+		EndIf
+	EndEvent
 
 	Function EndBehaviour()
+		UnregisterForLOS(GetActorRef(), Game.GetPlayer())
 		actor_alias.RemoveFromFaction(PAHBEWaiting)
 	EndFunction
 EndState
@@ -468,36 +477,46 @@ State tied
 		ChangeTiePose("PAHETieUpEnter")
 		RegisterForAnimEvent()
 		RegisterForSingleUpdateGameTime(0.5)
-		gameTime = Utility.GetCurrentGameTime()
+		gameTime = GetCurrentGameTime()
 		actor_alias.SetCanChangeStates(false)
 	EndFunction
 	Function OnUpdateGameTime()
-		If mind.StartMovingByFormula()
-			If breakingRestraint
-				TieUp(None, Enter = False)
-				If !(canRunAway() && mind.RunAwayByFormula())
-					waitSandbox()
+		If cuffs
+			If mind.StartMovingByFormula()
+				RegisterForSingleLOSGain(GetActorRef(), Game.GetPlayer())
+				If breakingRestraint
+					TieUp(None, Enter = False)
+					If !(canRunAway() && mind.RunAwayByFormula())
+						waitSandbox()
+					EndIf
+				Else
+					If mind.CanBreakRestraint(cuffs)
+						breakingRestraint = true
+					EndIf
+					TrainSubmission(0.5)
+					struggle = true
+					PlayTieUpAnimation()
 				EndIf
 			Else
-				If mind.CanBreakRestraint(cuffs)
-					breakingRestraint = true
-				EndIf
+				UnregisterForLOS(GetActorRef(), Game.GetPlayer())
 				TrainSubmission(0.5)
-				struggle = true
+				TrainPose(0.5)
+				struggle = false
 				PlayTieUpAnimation()
 			EndIf
+	
+			If (gameTime - GetCurrentGameTime()) * 24 >= 1
+				gameTime = gameTime + (0.5 / 24)
+				OnUpdateGameTime()
+			Else
+				RegisterForSingleUpdateGameTime(0.5)
+			EndIf
 		Else
-			TrainSubmission(0.5)
-			TrainPose(0.5)
-			struggle = false
-			PlayTieUpAnimation()
-		EndIf
-
-		If (gameTime - Utility.GetCurrentGameTime()) * 24 >= 1
-			gameTime = gameTime + (0.5 / 24)
-			OnUpdateGameTime()
-		Else
-			RegisterForSingleUpdateGameTime(0.5)
+			If randomFloat() > 0.5
+				FollowPlayer()
+			else
+				wait()
+			EndIf
 		EndIf
 	EndFunction
 	Event OnAnimationEvent(ObjectReference akSource, string asEventName)
@@ -509,6 +528,15 @@ State tied
 		Calm(GetActorRef())
 		PlayTieUpAnimation()
 	EndEvent
+	
+	Event OnGainLOS(Actor akViewer, ObjectReference akTarget)
+		If randomFloat() < submission / 100
+			TrainSubmission(0.5)
+			struggle = false
+			PlayTieUpAnimation()
+		EndIf
+	EndEvent
+
 ;	Event OnItemAdded(Form akBaseItem, int aiItemCount, ObjectReference akItemReference, ObjectReference akSourceContainer)
 ;		If akBaseItem.HasKeyWordString("zbfWornDevice")
 ;			GetActorRef().EquipItem(akBaseItem, True)
@@ -521,6 +549,7 @@ State tied
 		EndIf
 	EndEvent
 	Function EndBehaviour()
+		UnregisterForLOS(GetActorRef(), Game.GetPlayer())
 		TieUp(None, Enter = False)
 	EndFunction
 EndState
@@ -699,9 +728,11 @@ Form Function findCuffs()
 	EndIf
 EndFunction
 
+bool property bla auto Conditional
+
 ;### Orders ###
 Bool __should_fight_for_player = False
-Bool Property should_fight_for_player
+Bool Property should_fight_for_player	Hidden
 	Bool Function get()
 		return __should_fight_for_player
 	EndFunction
@@ -721,7 +752,7 @@ Bool Property should_fight_for_player
 EndProperty
 
 Bool __should_be_respectful = False
-Bool Property should_be_respectful
+Bool Property should_be_respectful	Hidden
 	Bool Function get()
 		return __should_be_respectful
 	EndFunction
@@ -732,7 +763,7 @@ Bool Property should_be_respectful
 EndProperty
 
 Bool __should_pose = False
-Bool Property should_pose
+Bool Property should_pose	Hidden
 	Bool Function get()
 		return __should_pose
 	EndFunction
@@ -755,13 +786,13 @@ Function releaseSlave()
 	Actor releasedSlave = actor_alias.the_actor
 	Release()
 	releasedSlave.RemoveFromAllFactions()
-	releasedSlave.PathToReference(RelaseMarker.GetReference(), 1)
+	releasedSlave.PathToReference(ReleaseMarker.GetReference(), 1)
 	releasedSlave.DeleteWhenAble()
 EndFunction
 
 ; ### Pose Handling ###
 Bool __is_posing = False
-Bool Property is_posing
+Bool Property is_posing	Hidden
 	Bool Function get()
 		return __is_posing
 	EndFunction
@@ -790,7 +821,7 @@ EndFunction
 
 ; ### Combat Handling ###
 Bool __fights_for_player = False
-Bool Property fights_for_player
+Bool Property fights_for_player	Hidden
 	Bool Function get()
 		return __fights_for_player
 	EndFunction
@@ -813,7 +844,7 @@ Function TestShouldHaveFought()
 			bHasFought = true
 		EndIf
 	ElseIf bHasFought
-		TrainCombat(2)
+		TrainCombat(1)
 		bHasFought = false
 	EndIf
 EndFunction
@@ -867,7 +898,7 @@ Event UpdateStrength(string eventName = "", string strArg = "", float numArg = 0
 			tries = 50
 			clone.Delete()
 		ElseIf !clone && PAH.enableDebug
-			debug.trace("[PAHExtension slave] Update Strength " + _slave.GetDisplayName() + ": No clone")
+			debug.trace("[PAHESlave] Update Strength " + _slave.GetDisplayName() + ": No clone")
 		EndIf
 		tries += 1
 	EndWhile
@@ -880,7 +911,7 @@ EndFunction
 
 ; ### Dialogue ###
 Bool __respectful = False
-Bool Property respectful
+Bool Property respectful	Hidden
 	Bool Function get()
 		return __respectful
 	EndFunction
@@ -942,8 +973,8 @@ String punishment_reason = ""
 String punishment_type = ""
 Bool end_punishment_on_next_tick = false
 
-Bool Property punishment_active = false Auto
-Int Property ticks_since_last_punished = 1000 Auto
+Bool Property punishment_active = false Auto	Hidden
+Int Property ticks_since_last_punished = 1000 Auto	Hidden
 
 Function HandlePunishmentOnUpdate()
 	if punishment_active
@@ -1031,8 +1062,58 @@ Function TellOff(string reason = "")
 EndFunction
 
 ; ### Training ###
+Event handleSexEvent(Form TrackedForm, int tid)
+	sslThreadController controller = PAH.SexLab.GetController(tid)
+	sslBaseAnimation anim = controller.Animation
+	
+	While anim == None
+		Utility.wait(1)
+		anim = controller.Animation
+	EndWhile
+
+	int trainCount = 0
+	bool bTrainAnal = false
+	bool bTrainOral = false
+	bool bTrainVaginal = false
+
+	int multiplier = 1
+	If (controller.GetVictim() == GetActorRef())
+		multiplier = 2
+	EndIf
+	If anim.HasTag("Anal")
+		trainCount += 1
+		bTrainAnal = true
+	EndIf
+	If anim.HasTag("Oral")
+		trainCount += 1
+		bTrainOral = true
+	EndIf
+	If anim.HasTag("Vaginal")
+		trainCount += 1
+		bTrainVaginal = true
+	EndIf
+
+	If bTrainAnal
+		trainAnal(5 * multiplier / trainCount)
+	EndIf
+	If bTrainOral
+		trainOral(5 * multiplier / trainCount)
+	EndIf
+	If bTrainVaginal
+		trainVaginal(5 * multiplier / trainCount)
+	EndIf
+EndEvent
+
+Function registerSexEvent()
+	PAH.SexLab.untrackActor(getActorRef(), "PAH" + getActorRef().GetFormID())
+	UnregisterForModEvent("PAH" + getActorRef().GetFormID() + "_Added")
+
+	PAH.SexLab.trackActor(getActorRef(), "PAH" + getActorRef().GetFormID())
+	RegisterForModEvent("PAH" + getActorRef().GetFormID() + "_Added", "handleSexEvent")
+EndFunction
+
 Float __submission = 0.0
-Float Property submission
+Float Property submission	Hidden
 	Float Function get()
 		return __submission
 	EndFunction
@@ -1055,30 +1136,37 @@ Function TrainSubmission(Float base_ammount)
 	submission += (base_ammount * multiplier)
 EndFunction
 
-Float __combat_training = 0.0
-Float Property combat_training
+Float __combatTraining = 0.0
+int combatTrainingPlayerLevel = 0
+Float Property combat_training	Hidden
 	Float Function get()
-		return __combat_training
+		return __combatTraining
 	EndFunction
 	Function set(Float value)
-		__combat_training = value
-		If __combat_training > 100
-			__combat_training = 100
-		ElseIf __combat_training < 0
-			__combat_training = 0
+		float initialTraining = __combatTraining
+		__combatTraining = value
+		If __combatTraining > 100
+			__combatTraining = 100
+		ElseIf __combatTraining < 0
+			__combatTraining = 0
 		EndIf
-		actor_alias.SetFactionRank(PAHTrainCombat, __combat_training as Int)
+		actor_alias.SetFactionRank(PAHTrainCombat, __combatTraining as Int)
 
 		actor_alias.aggression = 1
 		actor_alias.assistance = 2
-		If __combat_training < 20
-			actor_alias.confidence = 1
-		ElseIf __combat_training < 40
-			actor_alias.confidence = 2
-		ElseIf __combat_training < 60
-			actor_alias.confidence = 3
-		ElseIf __combat_training < 80
+		
+		If (initialTraining / 10) as Int < (__combatTraining / 10) as Int
+			UpdateStrength()
+		EndIf
+		
+		If __combatTraining >= 60
 			actor_alias.confidence = 4
+		ElseIf __combatTraining >= 40
+			actor_alias.confidence = 3
+		ElseIf __combatTraining >= 20
+			actor_alias.confidence = 2
+		Else
+			actor_alias.confidence = 1
 		EndIf
 	EndFunction
 EndProperty
@@ -1086,11 +1174,10 @@ EndProperty
 Function TrainCombat(Float base_ammount)
 	Float multiplier = 0.1 + (0.9*(1-(combat_training/100)))
 	combat_training += (base_ammount * multiplier)
-	SendModEvent(GetID() + "PAHEUpdateStrength")
 EndFunction
 
 Float __anger_training = 0.0
-Float Property anger_training
+Float Property anger_training	Hidden
 	Float Function get()
 		return __anger_training
 	EndFunction
@@ -1111,7 +1198,7 @@ Function TrainAnger(Float base_ammount)
 EndFunction
 
 Float __respect_training = 0.0
-Float Property respect_training
+Float Property respect_training	Hidden
 	Float Function get()
 		return __respect_training
 	EndFunction
@@ -1132,7 +1219,7 @@ Function TrainRespect(Float base_ammount)
 EndFunction
 
 Float __pose_training = 0.0
-Float Property pose_training
+Float Property pose_training	Hidden
 	Float Function get()
 		return __pose_training
 	EndFunction
@@ -1153,7 +1240,7 @@ Function TrainPose(Float base_ammount)
 EndFunction
 
 Float __oral_training = 0.0
-Float Property oral_training
+Float Property oral_training	Hidden
 	Float Function get()
 		return __oral_training
 	EndFunction
@@ -1175,7 +1262,7 @@ Function TrainOral(Float base_amount)
 EndFunction
 
 Float __vaginal_training = 0.0
-Float Property vaginal_training
+Float Property vaginal_training	Hidden
 	Float Function get()
 		return __vaginal_training
 	EndFunction
@@ -1197,7 +1284,7 @@ Function TrainVaginal(Float base_amount)
 EndFunction
 
 Float __anal_training = 0.0
-Float Property anal_training
+Float Property anal_training	Hidden
 	Float Function get()
 		return __anal_training
 	EndFunction
@@ -1219,12 +1306,12 @@ Function TrainAnal(Float base_amount)
 EndFunction
 
 Float __sex_training = 0.0
-Float Property sex_training
+Float Property sex_training	Hidden
 	Float Function get()
 		return __sex_training
 	EndFunction
 	Function set(Float value)
-		If actor_alias.the_actor.GetActorBase().GetSex() == 0
+		If actor_alias.GetSex() == 0
 			__sex_training = (oral_training + anal_training) / 2
 		Else
 			__sex_training = (oral_training + vaginal_training + anal_training) / 3
@@ -1240,12 +1327,11 @@ Float Property sex_training
 EndProperty
 
 Function TrainSex(Float base_amount)
-	Float multiplier = 0.1 + (0.9*(1-(sex_training/100)))
-	sex_training += (base_amount * multiplier)
+	sex_training = 0
 EndFunction
 
 Float __fear_training = 0.0
-Float Property fear_training
+Float Property fear_training	Hidden
 	Float Function Get()
 		return __fear_training
 	EndFunction
@@ -1455,4 +1541,9 @@ Function resetSlave()
 
 	behaviour = beh
 	Debug.Notification(actor_alias.getDisplayName() + " reset")
+EndFunction
+
+Function setDisplayName(string newName)
+	GetActorRef().setDisplayName(newName)
+	slaveName.setName(newName)
 EndFunction

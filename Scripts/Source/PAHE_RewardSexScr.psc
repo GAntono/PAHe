@@ -6,13 +6,7 @@ Scriptname PAHE_RewardSexScr Extends TopicInfo Hidden
 Function Fragment_0(ObjectReference akSpeakerRef)
 Actor akSpeaker = akSpeakerRef as Actor
 ;BEGIN CODE
-PAHSlave target = targetSlaveRef as PAHSlave
-akSpeaker.pathtoreference(target.GetActorRef(), 0.5)
-If target.actorWouldFuck(akSpeaker)
-	(DialogueQuest as PAHPunishmentRapeScript).punish(targetSlaveRef.GetActorRef(), akSpeaker)
-Else
-	(DialogueQuest as PAHPunishmentRapeScript).punish(targetSlaveRef.GetActorRef(), akSpeaker, _aggressive = true)
-EndIf
+(DialogueQuest as PAHPunishmentRapeScript).punish(targetSlaveRef.GetActorRef(), akSpeaker)
 ;END CODE
 EndFunction
 ;END FRAGMENT

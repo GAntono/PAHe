@@ -3,7 +3,9 @@ Scriptname PAH_MCM extends SKI_ConfigBase
 PAHCore Property PAH Auto
 PAHBootstrapScript Property Reboot Auto
 
-String version = "0.1H RC 5.0"
+String version = "0.1H RC 5.1"
+
+Int maxSub_OID
 
 Int fleeToggle_OID
 Int healthToggle_OID
@@ -88,7 +90,7 @@ Event OnConfigOpen()
 
 	Debug.trace("==========PAH Extension: Ignore cast errors==========")
 	jcInstalled = JContainers.isInstalled()
-	version = "0.1H RC 5.0"
+	version = version + " test3"
 	Debug.trace("==========PAH Extension: End of cast errors==========")
 EndEvent
 
@@ -294,6 +296,7 @@ Function ListSlaveStats(int index)
 
 	If debugToggle
 		AddEmptyOption()
+		maxSub_OID = AddTextOption("Max Submission:", currentSlave.GetActorRef().GetDisplayName())
 		resetSlave_OID = AddTextOption("Reset Slave:", currentSlave.GetActorRef().GetDisplayName())
 	EndIf
 EndFunction
@@ -355,7 +358,7 @@ Event OnOptionSelect(Int option)
 
 			String sResult = UILib.ShowTextInput("Rename Slave", suggestedName)
 			If sResult != ""
-				currentSlave.GetActorRef().SetDisplayName(sResult)
+				currentSlave.SetDisplayName(sResult)
 				forcedReset = currentSlave_OID
 				ForcePageReset()
 			EndIf
@@ -363,6 +366,10 @@ Event OnOptionSelect(Int option)
 			ShowMessage("Close all menus to continue...", false)
 			Utility.wait(0.1)
 			currentSlave.resetSlave()
+		ElseIf (option == maxSub_OID)
+			currentSlave.submission = 100
+			forcedReset = currentSlave_OID
+			ForcePageReset()
 		Else
 			forcedReset = option
 			ForcePageReset()
