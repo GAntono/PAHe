@@ -6,7 +6,6 @@ PAHCore Property PAH Auto
 ReferenceAlias Property pah_stub Auto	Hidden
 ReferenceAlias Property ReleaseMarker  Auto	Hidden
 
-Faction Property zbfFactionSlave Auto
 Faction Property PlayerFaction Auto
 Faction Property PAHPlayerSlaveFaction Auto
 
@@ -40,7 +39,6 @@ Faction Property PAHSDRestraintAdded Auto
 Faction Property PAHSDRestraintRemoved Auto
 Faction Property PAHSDFailedToFight Auto
 Faction Property PAHSDFailedToPose Auto
-Outfit Property PAHNothingOutfit Auto
 
 Keyword Property PAHRestraint Auto
 Keyword Property PAHPaingiver Auto
@@ -114,12 +112,7 @@ Event AfterAssign()
 	__mind = None
 	manual_control_mode = false
 	actor_alias.AddToFaction(PAHPlayerSlaveFaction)
-	If zbfFactionSlave != None
-		actor_alias.AddToFaction(zbfFactionSlave)
-	EndIf
-;this next line causes issues with home sweet home, But...
-;**disabling the addtoplayerfaction line messes up cloning and then suddenly it doesn't?!?
-;	actor_alias.AddToFaction(PlayerFaction)
+	actor_alias.AddToFaction(PlayerFaction)
 	actor_alias.AddToFaction(PAH.dunPrisonerFaction)
 	actor_alias.AddToFaction(PAH.WINeverFillAliasesFaction)
 	If PAH.DLC1ThrallFaction != None
