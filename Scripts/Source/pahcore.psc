@@ -22,6 +22,8 @@ Faction Property PAHTrainOral Auto Hidden
 Faction Property PAHTrainVaginal Auto Hidden
 Faction Property PAHTrainFear Auto Hidden
 
+Faction Property PAHPlayerSlaveFaction Auto
+
 Faction Property sexSlaves Auto Hidden
 Faction Property Stormcloaks Auto
 Faction Property ImperialSoldiers Auto
@@ -130,7 +132,8 @@ Event OnPlayerLoadGame()
 	defeatActive = Game.GetFormFromFile(0x5c666, "SexLabDefeat.esp") as Keyword
 	Debug.trace("====================PAHExtension: End of soft dependencies.==========================")
 	registerKeys()
-	GetSlaveCount()
+	updateSlaveArray()
+	registerSlavesForEvents()
 	Debug.trace("====================PAHExtension: Startup Process finished.==========================")
 EndEvent
 
@@ -151,6 +154,16 @@ Function registerKeys()
 	If Config.whistleKey != -1
 		RegisterForKey(config.whistleKey)
 	EndIf
+EndFunction
+
+Function registerSlavesForEvents()
+	int i = 0
+	while i < slaveArray.length
+;		PAHSlave slave = slaveArray[i]
+;		slave.registerSexEvent()
+		slaveArray[i].registerSexEvent()
+		i += 1
+	EndWhile
 EndFunction
 
 Event OnKeyDown(Int KeyCode)
@@ -571,6 +584,7 @@ Function switchActors(Actor original, Actor clone)
 	clone.MoveTo(original)
 	clone.SetPosition(original.GetPositionX(), original.GetPositionY(), original.GetPositionZ())
 
+	RPNodes.transferNode(original, clone)
 	original.Disable()
 	original.MoveTo(CloneMarker)
 	original.EnableNoWait()

@@ -907,6 +907,10 @@ Int Function getItemCount(Form akItem)
 	return the_actor.getItemCount(akItem)
 EndFunction
 
+Int Function getSex()
+	return the_actor.GetActorBase().GetSex()
+EndFunction
+
 ;### Utility ###
 
 Float function SecondsToGameHours(Float seconds)

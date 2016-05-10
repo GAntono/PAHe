@@ -88,7 +88,7 @@ Event OnConfigOpen()
 
 	Debug.trace("==========PAH Extension: Ignore cast errors==========")
 	jcInstalled = JContainers.isInstalled()
-	version = "0.1H RC 5.0"
+	version = "0.1H RC 5.0 test1"
 	Debug.trace("==========PAH Extension: End of cast errors==========")
 EndEvent
 
