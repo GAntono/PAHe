@@ -2,6 +2,7 @@ Scriptname PAHE_slaveCandidate extends ReferenceAlias
 
 PAHCore Property PAH Auto
 Actor Property player Auto
+Faction property PAHECanBeCaptured Auto
 
 float preHitHealth
 Actor candidate
@@ -10,14 +11,16 @@ int ticks
 Function Filled()
 	ticks = 0
 	candidate = (GetReference() As Actor)
-	preHitHealth = candidate.getAV("Health")
-;	If candidate.IsInCombat() 
-;		GoToState("InCombat")
-;	ElseIf !Game.GetPlayer().IsDetectedBy(candidate)
-;		GoToState("Unaware")
-;	Else
-		GoToState("Aware")
-;	Endif
+	If candidate
+		preHitHealth = candidate.getAV("Health")
+	;	If candidate.IsInCombat() 
+	;		GoToState("InCombat")
+	;	ElseIf !Game.GetPlayer().IsDetectedBy(candidate)
+	;		GoToState("Unaware")
+	;	Else
+			GoToState("Aware")
+	;	Endif
+	EndIf
 EndFunction
 
 Event OnUpdate()
@@ -41,7 +44,11 @@ State InCombat
 		RegisterForSingleUpdate(2)
 	EndEvent
 	Event UpdateState()
-		clear()
+		If candidate.isInCombat()
+			RegisterForSingleUpdate(2)
+		Else
+			filled()
+		EndIf
 	EndEvent
 	Event OnHit(ObjectReference akAggressor, Form akSource, Projectile akProjectile, bool abPowerAttack, bool abSneakAttack, bool abBashAttack, bool abHitBlocked)
 		Float healthDmg = preHitHealth - candidate.GetAv("Health")
@@ -89,11 +96,21 @@ State Defeated
 		EndIf
 		candidate.SetNoBleedoutRecovery(true)
 		candidate.setDontMove(true)
+		candidate.addToFaction(PAHECanBeCaptured)
 		Debug.SendAnimationEvent(candidate, "BleedOutStart")
+	EndEvent
+
+	Event OnHit(ObjectReference akAggressor, Form akSource, Projectile akProjectile, bool abPowerAttack, bool abSneakAttack, bool abBashAttack, bool abHitBlocked)
+		If abPowerAttack && (akAggressor as Actor) == player
+			GetActorRef().EndDeferredKill()
+			GetActorRef().KillEssential(player)
+			clear()
+		EndIf
 	EndEvent
 	
 	Event UpdateState()
 		If ticks >= 150
+			candidate.removeFromFaction(PAHECanBeCaptured)
 			candidate.SetNoBleedoutRecovery(false)
 			candidate.setDontMove(false)
 			Debug.SendAnimationEvent(candidate, "BleedOutStop")
@@ -106,5 +123,11 @@ State Defeated
 		Else
 			RegisterForSingleUpdate(2)
 		EndIf
+	EndEvent
+	
+	Event OnEndState()
+		candidate.removeFromFaction(PAHECanBeCaptured)
+		candidate.SetNoBleedoutRecovery(false)
+		candidate.setDontMove(false)
 	EndEvent
 EndState

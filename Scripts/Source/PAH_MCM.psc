@@ -3,7 +3,10 @@ Scriptname PAH_MCM extends SKI_ConfigBase
 PAHCore Property PAH Auto
 PAHBootstrapScript Property Reboot Auto
 
-String version = "0.1H RC 5.0"
+String version = "0.1H RC 5.1"
+String testVersion = "test4"
+
+Int maxSub_OID
 
 Int fleeToggle_OID
 Int healthToggle_OID
@@ -35,7 +38,6 @@ Int Property whistleKey Hidden
 EndProperty
 
 Int[] slave_OID
-;PAHSlave[] slave_array
 
 int Property runAwayValue = 60 Auto Hidden
 int Property severity = 100 Auto Hidden
@@ -50,7 +52,6 @@ bool Property leashToggle = false Auto Hidden
 bool Property renameToggle = false Auto Hidden
 bool Property statSpellToggle = false Auto Hidden
 bool Property showSlaveCountToggle = false Auto Hidden
-bool jcInstalled = false
 bool _debugToggle = true
 bool Property debugToggle
 	bool Function Get()
@@ -70,26 +71,17 @@ string[] pageNames
 
 Event OnGameReload()
 	parent.OnGameReload()
+EndEvent
 
-;	If hotKey
-;		PAH.RegisterForKey(hotKey)
-;	EndIf
+Event OnConfigOpen()
+	version = "0.1H RC 5.1"
 
 	pageNames = new String[3]
 	pageNames[0] = "Options"
 	pageNames[1] = "Slaves"
-	pageNames[2] = version
+	pageNames[2] = version + testVersion
 
-;	MainQuest.Maintenance()
-EndEvent
-
-Event OnConfigOpen()
 	Pages = pageNames
-
-	Debug.trace("==========PAH Extension: Ignore cast errors==========")
-	jcInstalled = JContainers.isInstalled()
-	version = "0.1H RC 5.0"
-	Debug.trace("==========PAH Extension: End of cast errors==========")
 EndEvent
 
 event OnPageReset(string page)
@@ -117,7 +109,7 @@ Function UpdateOptionsPage()
 	leashToggle_OID = AddToggleOption("$PAHE_SettingName_LeashToggle", leashToggle)
 	alwaysAggroToggle_OID = AddToggleOption("$PAHE_SettingName_alwaysAggroToggle", PAH.bAlwaysAggressive)
 	showSlaveCountToggle_OID = AddToggleOption("$PAHE_SettingName_showSlaveCountToggle", showSlaveCountToggle)
-	If jcInstalled
+	If PAH.jcInstalled
 		renameToggle_OID = AddToggleOption("$PAHE_SettingName_RenameToggle", renameToggle)
 	EndIf
 
@@ -294,6 +286,7 @@ Function ListSlaveStats(int index)
 
 	If debugToggle
 		AddEmptyOption()
+		maxSub_OID = AddTextOption("Max Submission:", currentSlave.GetActorRef().GetDisplayName())
 		resetSlave_OID = AddTextOption("Reset Slave:", currentSlave.GetActorRef().GetDisplayName())
 	EndIf
 EndFunction
@@ -333,7 +326,7 @@ Event OnOptionSelect(Int option)
 		If (option == rename_OID)
 			UILIB_1 UILib = ((Self as Form) as UILIB_1)
 			String suggestedName = currentSlave.GetActorRef().getDisplayName()
-			If jcInstalled
+			If PAH.jcInstalled
 				string gender
 				If currentSlave.GetActorRef().GetLeveledActorBase().getSex() == 0
 					gender = "Male"
@@ -355,7 +348,7 @@ Event OnOptionSelect(Int option)
 
 			String sResult = UILib.ShowTextInput("Rename Slave", suggestedName)
 			If sResult != ""
-				currentSlave.GetActorRef().SetDisplayName(sResult)
+				currentSlave.SetDisplayName(sResult)
 				forcedReset = currentSlave_OID
 				ForcePageReset()
 			EndIf
@@ -363,6 +356,10 @@ Event OnOptionSelect(Int option)
 			ShowMessage("Close all menus to continue...", false)
 			Utility.wait(0.1)
 			currentSlave.resetSlave()
+		ElseIf (option == maxSub_OID)
+			currentSlave.submission = 100
+			forcedReset = currentSlave_OID
+			ForcePageReset()
 		Else
 			forcedReset = option
 			ForcePageReset()

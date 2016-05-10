@@ -30,7 +30,7 @@ Function punish(Actor _target, Actor _player, String _tag = "", bool _aggressive
 		tag = tag + ", Aggressive"
 	EndIf
 
-	train(_target, _tag, aggressive)
+;	train(_target, _tag, aggressive)
 
 	If _player.IsWeaponDrawn()
 		_player.SheatheWeapon()
@@ -61,7 +61,12 @@ Function punish(Actor _target, Actor _player, String _tag = "", bool _aggressive
 										EndIf
 			Model.AddActor(_player, false)
 			Model.AddActor(_target, aggressive)
-			anims[0] = SexLab.GetAnimationByName("Zyn Licking")
+			If Utility.randomFloat() <= 0.5
+				anims[0] = SexLab.GetAnimationByName("Mitos FemDom")
+			EndIf
+			If !anims[0]
+				anims[0] = SexLab.GetAnimationByName("Zyn Licking")
+			EndIf
 			animSet = true
 		ElseIf _tag == "Anal"
 										If PAH.enableDebug

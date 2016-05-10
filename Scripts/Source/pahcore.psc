@@ -22,6 +22,8 @@ Faction Property PAHTrainOral Auto Hidden
 Faction Property PAHTrainVaginal Auto Hidden
 Faction Property PAHTrainFear Auto Hidden
 
+Faction Property PAHPlayerSlaveFaction Auto
+
 Faction Property sexSlaves Auto Hidden
 Faction Property Stormcloaks Auto
 Faction Property ImperialSoldiers Auto
@@ -36,6 +38,8 @@ Faction Property currentFollowerFaction Auto
 Faction Property currentHirelingFaction Auto
 
 Keyword Property defeatActive Auto Hidden
+Quest Property arousedInstalled Auto Hidden
+Quest Property attractionInstalled Auto Hidden
 
 EncounterZone Property PAH0to9Zone Auto
 EncounterZone Property PAH10to19Zone Auto
@@ -92,6 +96,7 @@ EffectShader Property CaptureShader Auto
 int Property slave_count Auto Conditional
 bool Property is_full Auto Conditional
 bool Property bAlwaysAggressive Auto Conditional
+bool Property jcInstalled Auto Hidden
 
 String __modStatus
 String Property modStatus
@@ -120,23 +125,31 @@ Event OnPlayerLoadGame()
 		player = Game.GetPlayer()
 	EndIf
 	Debug.trace("====================PAHExtension: Checking for soft dependencies.====================")
+	jcInstalled = JContainers.isInstalled()
 	sexSlaves = Game.GetFormFromFile(0xD6B, "SexSlavesForVanillaBandits.esp") As Faction
 	If !sexSlaves
 		sexSlaves = Game.GetFormFromFile(0xD6B, "MoreBanditCamps - SexSlaves.esp") As Faction
 	EndIf
 	DLC1ThrallFaction = Game.GetFormFromFile(0x162F7, "Dawnguard.esm") As Faction
+	If DLC1ThrallFaction
+		PAHPlayerSlaveFaction.SetAlly(Game.GetFormFromFile(0x71D3, "Dawnguard.esm") As Faction)
+	EndIf
 	_dd_collar = Game.GetFormFromFile(0x3DF7, "Devious Devices - Assets.esm") As Keyword
 
 	defeatActive = Game.GetFormFromFile(0x5c666, "SexLabDefeat.esp") as Keyword
+	arousedInstalled = (Game.GetFormFromFile(0x4290F, "SexLabAroused.esm") as Quest)
+	attractionInstalled = (Game.GetFormFromFile(0x12c7, "SexLab Attraction.esm") as Quest)
 	Debug.trace("====================PAHExtension: End of soft dependencies.==========================")
 	registerKeys()
-	GetSlaveCount()
+	slaveMaintenance()
+	updateSlaveArray()
 	Debug.trace("====================PAHExtension: Startup Process finished.==========================")
 EndEvent
 
 Event OnBootstrap()
 	RegisterForSingleUpdate(0.5)
 	SetObjectiveDisplayed(0)
+	OnPlayerLoadGame()
 EndEvent
 
 Event OnUpdate()
@@ -151,6 +164,17 @@ Function registerKeys()
 	If Config.whistleKey != -1
 		RegisterForKey(config.whistleKey)
 	EndIf
+EndFunction
+
+Function slaveMaintenance()
+	int i = 0
+	while i < slaveArray.length
+		slaveArray[i].registerSexEvent()
+		If slaveArray[i].getName() == "" || slaveArray[i].getName() == "slave"
+			slaveArray[i].setDisplayName(slaveArray[i].actor_alias.getDisplayName())
+		Endif
+		i += 1
+	EndWhile
 EndFunction
 
 Event OnKeyDown(Int KeyCode)
@@ -177,11 +201,11 @@ EndFunction
 Function getSlaveCandidateByKeypress()
 	Actor Target = GetCurrentCrosshairRef() as Actor
 	If Target
-		If player.IsSneaking() && !player.IsDetectedBy(target) && !target.HasKeywordString("testChick") && !target.IsBleedingOut()
-			OverwhelmTarget(target)
-		Else
+;		If player.IsSneaking() && !player.IsDetectedBy(target) && !target.HasKeywordString("testChick") && !target.IsBleedingOut()
+;			OverwhelmTarget(target)
+;		Else
 			CaptureSpell.Cast(player, Target)
-		EndIf
+;		EndIf
 	Else
 		CaptureSpell.Cast(player)
 	EndIf
@@ -194,6 +218,7 @@ EndFunction
 
 ;### Public
 PAHSlave Function AddSlave(Actor slave_actor)
+		PAHSlave testSlave = GetSlaveByIndex(0)
 	SetObjectiveDisplayed(0)
 	ReferenceAlias slave_alias
 
@@ -206,7 +231,17 @@ PAHSlave Function AddSlave(Actor slave_actor)
 	If slave_alias == None
 		return None
 	EndIf
+	
+	String name = slave_actor.getDisplayName()
+	String[] names = _slave_names
+	int i = names.length
 	slave_alias.ForceRefTo(slave_actor)
+	While i > 0
+		i -= 1
+		_slave_array[i].setDisplayName(names[i])
+	EndWhile
+		
+	(slave_alias as PAHSlave).setDisplayName(name)
 	updateSlaveArray(slave_alias)
 
 	(slave_alias as PAHActorAlias).AfterAssign()
@@ -343,7 +378,7 @@ Function updateSlaveArray(ReferenceAlias _alias = None, bool remove = false)
 			PAHSlave slave = slave_aliases[i] as PAHSlave
 			If slave.GetActorRef() && slave.GetActorRef().GetFormID()
 				tmp_slaveArray[currentSlaveIndex] = slave
-				tmp_stringArray[currentSlaveIndex] = slave.GetActorRef().getDisplayName()
+				tmp_stringArray[currentSlaveIndex] = slave.getName()
 				currentSlaveIndex += 1
 			EndIf
 			i += 1
@@ -355,11 +390,11 @@ Function updateSlaveArray(ReferenceAlias _alias = None, bool remove = false)
 		int i = 0
 		While i < newArrayLength - 1
 			tmp_slaveArray[i] = _slave_array[i]
-			tmp_stringArray[i] = _slave_array[i].GetActorRef().getDisplayName()
+			tmp_stringArray[i] = _slave_array[i].getName()
 			i += 1
 		EndWhile
 		tmp_slaveArray[i] = _alias as PAHSlave
-		tmp_stringArray[i] = _alias.GetActorRef().getDisplayName()
+		tmp_stringArray[i] = tmp_slaveArray[i].getName()
 	ElseIf remove && _alias
 		int newArrayLength = _slave_array.length - 1
 		tmp_slaveArray = GetSlaveArrayLength(newArrayLength)
@@ -371,7 +406,7 @@ Function updateSlaveArray(ReferenceAlias _alias = None, bool remove = false)
 			If _slave_array[old_index] != None && _slave_array[old_index].GetActorRef() != None
 				If _slave_array[old_index] as ReferenceAlias != _alias
 					tmp_slaveArray[new_index] = _slave_array[old_index]
-					tmp_stringArray[new_index] = _slave_array[old_index].GetActorRef().GetDisplayName()
+					tmp_stringArray[new_index] = _slave_array[old_index].getName()
 					new_index += 1
 				Else
 					_alias.clear()
@@ -389,15 +424,6 @@ Function updateSlaveArray(ReferenceAlias _alias = None, bool remove = false)
 		_slave_array = tmp_slaveArray
 		_slave_names = tmp_stringArray
 	EndIf
-
-;		While new_index < newArrayLength && old_index < newArrayLength + 1
-;			If _slave_array[old_index] != None && _slave_array[old_index].GetActorRef() != None
-;				tmp_slaveArray[new_index] = _slave_array[old_index]
-;				tmp_stringArray[new_index] = _slave_array[old_index].GetActorRef().GetDisplayName()
-;				new_index += 1
-;			EndIf
-;			old_index += 1
-;		EndWhile
 EndFunction
 
 ;PAHSlave[] Function GetAllSlaves()
@@ -438,6 +464,7 @@ bool considerFactions = false
 bool issexSlaves = false
 
 Function Capture(Actor captive)
+	PAHSlave testSlave = GetSlaveByIndex(0)
 	If captive != slaveCandidate.GetActorRef()
 		Debug.SendAnimationEvent(captive, "BleedOutStart")
 	EndIf
@@ -447,8 +474,6 @@ Function Capture(Actor captive)
 		AddSlave(cleaned_captive)
 		UpdateSlaveCount()
 
-;		int relRank = cleaned_captive.GetRelationShipRank(player)
-;		cleaned_captive.SetRelationshipRank(player, relRank - 2)
 		cleaned_captive.SetRelationshipRank(player, -2)
 
 		If considerFactions
@@ -523,7 +548,7 @@ Actor Function Clone(Actor original)
 					int jNames = JValue.readFromFile("Data/PAHE/" + gender + sRace + ".txt")
 					int rInt = Utility.RandomInt(0, JArray.count(jnames) - 1)
 					string name = JArray.getStr(jnames, rInt)
-	
+
 					If name != ""
 						clone.SetDisplayName(name)
 					Else
@@ -540,8 +565,6 @@ Actor Function Clone(Actor original)
 		EndIf
 		tries += 1
 	EndWhile
-;	original_base = GetValidActorBase(original)
-;	clone = createClone(CloneMarker.PlaceActorAtMe(GetValidActorBase(original), 4, level_band_zone), original)
 	return None
 EndFunction
 
@@ -568,15 +591,35 @@ Function setSLSkills(Actor source, Actor target)
 EndFunction
 
 Function switchActors(Actor original, Actor clone)
+	RPNodes.transferNode(original, clone)
+	If JContainers.isInstalled() && SlaveTats.Version() != ""
+		original.enableAI(false)
+		int array = JArray.object()
+		JValue.retain(array)
+		If !SlaveTats.query_applied_tattoos(original, 0, array)
+			int index = JArray.count(array)
+			debug.trace("[PAHCore] SlavTats: " + index + " entries")
+			if index > 0
+				while index > 0
+					index -= 1
+					SlaveTats.add_tattoo(clone, JArray.getObj(array, index), silent = true)
+				endWhile
+				SlaveTats.synchronize_tattoos(clone, true)
+			EndIf
+			JValue.release(array)
+		EndIf
+	EndIf
+
+	clone.setAlpha(0.0)
 	clone.MoveTo(original)
 	clone.SetPosition(original.GetPositionX(), original.GetPositionY(), original.GetPositionZ())
-
-	original.Disable()
-	original.MoveTo(CloneMarker)
-	original.EnableNoWait()
+	
 	If original == slaveCandidate.getActorRef()
 		slaveCandidate.clear()
 	EndIf
+	original.Disable()
+	original.MoveTo(CloneMarker)
+	original.EnableNoWait()
 	original.EndDeferredKill()
 	original.KillEssential(player)
 	Debug.SendAnimationEvent(clone, "BleedOutStart")
@@ -664,11 +707,14 @@ Function ClearLeashPoint(ObjectReference leash_point)
 EndFunction
 
 ;### Utility
-Bool Function IsTogetherWith(ObjectReference subject_ref, ObjectReference object_ref)
+FormList Property wouldFuckList Auto
+FormList Property wouldNotFuckList Auto
+
+Bool Function IsTogetherWith(ObjectReference subject_ref, ObjectReference object_ref, int distance = 10000)
 	If object_ref.IsInInterior()
 		return subject_ref.GetParentCell() == object_ref.GetParentCell()
 	Else
-		return subject_ref.GetWorldSpace() == object_ref.GetWorldSpace() && subject_ref.GetDistance(object_ref) < 10000
+		return subject_ref.GetWorldSpace() == object_ref.GetWorldSpace() && subject_ref.GetDistance(object_ref) < distance
 	EndIf
 EndFunction
 
@@ -682,6 +728,14 @@ EndFunction
 
 float Function getMax(float value_1, float value_2)
 	If value_1 > value_2
+		return value_1
+	Else
+		return value_2
+	EndIf
+EndFunction
+
+float Function getMin(float value_1, float value_2)
+	If value_1 < value_2
 		return value_1
 	Else
 		return value_2

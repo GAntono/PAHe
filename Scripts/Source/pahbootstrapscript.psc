@@ -131,6 +131,8 @@ Faction Property PAHShouldFightForPlayer Auto
 Faction Property PAHShouldPose Auto
 
 Faction Property PAHRespectful Auto
+Faction Property PAHBETied Auto
+Faction Property PAHBECalm Auto
 
 Faction Property PAHSDMadeNaked Auto
 Faction Property PAHSDClothedFromNaked Auto
@@ -162,6 +164,7 @@ Faction Property PAHMoodJustCaptured Auto
 Faction Property PAHTraitAngerRating Auto
 Faction Property PAHTraitFearRating Auto
 
+String[] nameArray
 
 ;# Bootstrap only
 
@@ -218,24 +221,34 @@ EndFunction
 Function RestartQuests()
 	EnsureQuestStarted(PAHRebootQuest)
 
+	int arrayLength = PAH.slaveArray.length
 	int core_index = 0
 	int boot_index = 0
+	nameArray = PAH.GetStringArrayLength(arrayLength)
 	PAHSlave[] slave_array = PAH.slaveArray
-	int steps = slave_array.length / 4
+	int steps = arrayLength / 4
+	steps = PAH.getMin(steps, 6) as Int
+	int percent = 100/steps
 	int process = 0
-	While (core_index < slave_array.length)
-		If core_index == steps || core_index == steps * 2 || core_index == steps * 3 || core_index == steps * 4 - 1
-			process += 25
+	While (core_index < arrayLength)
+		If core_index == steps || core_index == steps * 2 || core_index == steps * 3 || core_index == steps * 4 || core_index == steps * 5
+			process += percent
 			Debug.Notification("Paradise Halls: Saving " + process + "% of slaves.")
 		EndIf
-		Actor slave = slave_array[core_index].GetActorRef()
+		Actor slave = PAH.slaveArray[core_index].GetActorRef()
 		If slave != None
+			String name = slave.getName()
+			If name == "slave" || name == ""
+				name = PAH.getSlaveName(boot_index)
+			EndIf
+			nameArray[boot_index] = name
 			reboot_aliases[boot_index].ForceRefTo(slave)
 			slave.EvaluatePackage()
 			boot_index += 1
 		EndIf
 		core_index += 1
 	EndWhile
+	Debug.Notification("Paradise Halls: Saving slaves done.")
 
 	StopQuest(PAH)
 
@@ -245,8 +258,8 @@ Function RestartQuests()
 	steps = boot_index / 4
 	process = 0
 	While (j < boot_index)
-		If j == steps || j == steps * 2 || j == steps * 3 || j == steps * 4 - 1
-			process += 25
+		If j == steps || j == steps * 2 || j == steps * 3 || j == steps * 4 || j == steps * 5
+			process += percent
 			Debug.Notification("Paradise Halls: Restoring " + process + "% of slaves.")
 		EndIf
 		Actor slave = reboot_aliases[j].GetActorRef()
@@ -258,6 +271,7 @@ Function RestartQuests()
 		EndIf
 		j += 1
 	EndWhile
+	Debug.Notification("Paradise Halls: Restoring slaves done.")
 
 	StopQuest(PAHRebootQuest)
 	PAH.UpdateSlaveCount()
@@ -399,8 +413,8 @@ Function SetProperties()
 		slave.PAHBEFleeingAndCowering = PAHBEFleeingAndCowering
 		slave.PAHBERunningAway = PAHBERunningAway
 		slave.PAHBEWaitingAtLeashPoint = PAHBEWaitingAtLeashPoint
-;		slave.PAHBETied = PAHBETied
-;		slave.PAHBECalm = PAHBECalm
+		slave.PAHBETied = PAHBETied
+		slave.PAHBECalm = PAHBECalm
 		slave.PAHSubmission = PAHSubmission
 		slave.PAHTrainCombat = PAHTrainCombat
 		slave.PAHTrainAnger = PAHTrainAnger
@@ -430,13 +444,7 @@ Function SetProperties()
 		slave.RegisterForModEvent("PAHBootstrap", "OnBootstrap")
 
 		slave.PAHLeashToSpell = PAHLeashToSpell
-
-		int backPackIndex = i
-;		If i > 29
-;			backPackIndex -= 30
-;		EndIf
-		slave.backpack_mule = backpack_mules[backPackIndex]
-
+		slave.setDisplayName(nameArray[i])
 ;*************************************Mind**************************************
 		slave_mind = PAH.slave_aliases[i] as PAHSlaveMind
 
@@ -460,28 +468,14 @@ Function SendBootstrapEvents()
 	PAH.OnBootstrap()
 	int i = 0
 	SendModEvent("PAHBootstrap")
-;	While (i < PAH.slave_aliases.length)
-;		(PAH.slave_aliases[i] as PAHActorAlias).OnBootstrap()
-;		(PAH.slave_aliases[i] as PAHSlave).OnBootstrap()
-;		(PAH.slave_aliases[i] as PAHSlaveMind).OnBootstrap()
-;		i += 1
-;	EndWhile
 EndFunction
 
 Function AddItems()
 	Game.GetPlayer().AddPerk(PAHEnslavePerk)
-	; Game.GetPlayer().AddItem(PAHWhip, 1)
-	; Game.GetPlayer().AddItem(PAHSlaveCollar, 1)
-	; Game.GetPlayer().AddItem(PAHIronSlaveCollarLeashing, 10)
 
 	If (PAH.Config.statSpellToggle)
 		Game.GetPlayer().AddSpell(PAHInfoSpell, false)
 	EndIf
-	; Game.GetPlayer().AddSpell(PAHBoostSubmissionSpell, false)
-	; Game.GetPlayer().AddSpell(PAHDropSubmissionSpell, false)
-	; Game.GetPlayer().AddSpell(PAHTestSpell, false)
-	; Game.GetPlayer().AddSpell(PAHLeashToSpell, false)
-	; Game.GetPlayer().AddSpell(PAHRebootSpell, false)
 EndFunction
 
 Function FreeAllSlaves()

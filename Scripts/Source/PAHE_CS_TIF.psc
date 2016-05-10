@@ -6,7 +6,7 @@ Scriptname PAHE_CS_TIF Extends TopicInfo Hidden
 Function Fragment_0(ObjectReference akSpeakerRef)
 Actor akSpeaker = akSpeakerRef as Actor
 ;BEGIN CODE
-If !akSpeaker.isInFaction(PAHBETied) && akSpeaker.GetWornForm(4) != None
+If !akSpeaker.isInFaction(PAHBETied)
 	(GetOwningQuest() as PAHPunishmentRapeScript).unequip(akSpeaker)
 EndIf
 ;END CODE
