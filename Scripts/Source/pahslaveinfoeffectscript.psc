@@ -12,6 +12,7 @@ Event OnEffectStart(Actor akTarget, Actor akCaster)
 		slave.anger_training, \
 		slave.respect_training, \
 		slave.pose_training, \
-		slave.sex_training \
+		slave.sex_training, \
+		slave.fear_training \
 	)
 EndEvent

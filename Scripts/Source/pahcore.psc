@@ -538,7 +538,8 @@ Actor Function Clone(Actor original)
 
 	int tries = 0
 	While tries < 100
-		clone = CloneMarker.PlaceActorAtMe(original_base, 4, level_band_zone)
+		clone = CloneMarker.PlaceActorAtMe(original_base, 4, level_band_zone)			;original formula
+;		clone = CloneMarker.PlaceActorAtMe(original.GetLeveledActorBase(), 4, level_band_zone)	;epic fail
 
 		If actor_base_is_similar(original_base, clone.GetLeveledActorBase())
 			

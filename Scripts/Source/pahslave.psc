@@ -7,6 +7,8 @@ ReferenceAlias Property pah_stub Auto	Hidden
 ReferenceAlias Property ReleaseMarker  Auto	Hidden
 
 Faction Property zbfFactionSlave Auto
+Faction Property zbfFactionGagAllowTalk Auto
+
 Faction Property PlayerFaction Auto
 Faction Property PAHPlayerSlaveFaction Auto
 
@@ -40,7 +42,7 @@ Faction Property PAHSDRestraintAdded Auto
 Faction Property PAHSDRestraintRemoved Auto
 Faction Property PAHSDFailedToFight Auto
 Faction Property PAHSDFailedToPose Auto
-Outfit Property PAHNothingOutfit Auto
+;Outfit Property PAHNothingOutfit Auto
 
 Keyword Property PAHRestraint Auto
 Keyword Property PAHPaingiver Auto
@@ -114,8 +116,17 @@ Event AfterAssign()
 	__mind = None
 	manual_control_mode = false
 	actor_alias.AddToFaction(PAHPlayerSlaveFaction)
+    	If (zbfFactionSlave == None)
+        	zbfFactionSlave = Game.GetFormFromFile(0x000096AE, "ZaZAnimationPack.esm") As Faction
+    	EndIf
 	If zbfFactionSlave != None
 		actor_alias.AddToFaction(zbfFactionSlave)
+	EndIf
+    	If (zbfFactionGagAllowTalk == None)
+        	zbfFactionGagAllowTalk = Game.GetFormFromFile(0x000221B5, "ZaZAnimationPack.esm") As Faction
+    	EndIf
+	If zbfFactionGagAllowTalk != None
+		actor_alias.AddToFaction(zbfFactionGagAllowTalk)
 	EndIf
 ;this next line causes issues with home sweet home, But...
 ;**disabling the addtoplayerfaction line messes up cloning and then suddenly it doesn't?!?
@@ -1622,6 +1633,23 @@ Function resetSlave()
 	EndIf
 
 	behaviour = beh
+	If (zbfFactionSlave == None)
+        	zbfFactionSlave = Game.GetFormFromFile(0x000096AE, "ZaZAnimationPack.esm") As Faction
+    	EndIf
+	If zbfFactionSlave != None
+		actor_alias.AddToFaction(zbfFactionSlave)
+	EndIf
+    	If (zbfFactionGagAllowTalk == None)
+        	zbfFactionGagAllowTalk = Game.GetFormFromFile(0x000221B5, "ZaZAnimationPack.esm") As Faction
+    	EndIf
+	If zbfFactionGagAllowTalk != None
+		actor_alias.AddToFaction(zbfFactionGagAllowTalk)
+	EndIf
+	If PAH.DLC1ThrallFaction != None
+		actor_alias.AddToFaction(PAH.DLC1ThrallFaction)
+	EndIf
+	actor_alias.IgnoreFriendlyHits(true)
+	actor_alias.SetNotShowOnStealthMeter(true)
 	If PAH.enableDebug
 		Debug.Notification(actor_alias.getDisplayName() + " reset")
 	EndIf

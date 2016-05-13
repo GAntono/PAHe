@@ -39,6 +39,7 @@ Faction Property PAHTrainCombat Auto
 Faction Property PAHTrainSex Auto
 Faction Property PAHTrainRespect Auto
 Faction Property PAHTrainPose Auto
+Faction Property PAHTrainFear Auto
 
 Function Calculate(Actor _slave)
 	slave = _slave
@@ -144,8 +145,11 @@ Function Calculate(Actor _slave)
         PAHTrainRespect = Game.GetFormFromFile(0x0005862b, "paradise_halls.esm") As Faction
     EndIf
     If (PAHTrainPose == None)
-        PAHTrainPose = Game.GetFormFromFile(0x0005862b, "paradise_halls.esm") As Faction 
-	; 0x059BD5   <<too short, but that's what antono said was pahtrainpose
+        PAHTrainPose = Game.GetFormFromFile(0x00059BD5, "paradise_halls.esm") As Faction 
+; 0x059BD5   <<too short, but that's what antono said was pahtrainpose---the above is tesedit formid compared to tesedit form of respect
+    EndIf
+    If (PAHTrainFear == None)
+        PAHTrainFear = Game.GetFormFromFile(0x0001BB4E, "paradise_halls_SLExtension.esp") As Faction
     EndIf
 
 	Float fTrainMod = 1.0
@@ -154,7 +158,8 @@ Function Calculate(Actor _slave)
 	fTrainMod += (slave.GetFactionRank(PAHTrainCombat) / 100.0)
 	fTrainMod += (slave.GetFactionRank(PAHTrainSex) / 100.0)
 	fTrainMod += (slave.GetFactionRank(PAHTrainRespect) / 150.0)
-	fTrainMod += (slave.GetFactionRank(PAHTrainPose) / 100.0)
+	fTrainMod += (slave.GetFactionRank(PAHTrainPose) / 200.0)
+	fTrainMod += ((slave.GetFactionRank(PAHTrainFear) / 60.0) + 0.34)
 	TrainingRating = 0
 	
 	Float fWeightMod = (slave.GetLeveledActorBase().GetWeight() / 50.0) + 0.5

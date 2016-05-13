@@ -264,6 +264,9 @@ Function train(Actor _actor, String _tag, bool _aggressive)
 		multiplier = 2.0
 		int relRank = _actor.GetRelationShipRank(PlayerRef)
 		_actor.SetRelationshipRank(PlayerRef, relRank - 1)
+	Else
+		int relRank = _actor.GetRelationShipRank(PlayerRef)
+		_actor.SetRelationshipRank(PlayerRef, relRank + 1)
 	EndIf
 	
 	If _tag == "Oral" || _tag == "oral"

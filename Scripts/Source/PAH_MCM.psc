@@ -4,7 +4,7 @@ PAHCore Property PAH Auto
 PAHBootstrapScript Property Reboot Auto
 
 String version = "pahe lives on 6.0.3"
-String testVersion = "test7"
+String testVersion = "test8"
 
 Int maxSub_OID
 
@@ -26,6 +26,7 @@ Int statSpellToggle_OID
 Int slaverRankSetting_OID
 Int debugToggle_OID
 Int resetSlaveList_OID
+Int newClone_OID
 Int resetSlave_OID
 Int hotKey_OID
 Int modifierKey_OID
@@ -60,7 +61,7 @@ int Property runAwayValue = 60 Auto Hidden
 int Property severity = 100 Auto Hidden
 int Property followerTrainingEfficiency = 50 Auto Hidden
 
-float Property postRapeDelay = 30.0 Auto Hidden
+float Property postRapeDelay = 15.0 Auto Hidden
 
 bool Property leashToggle = true Auto Hidden
 bool Property renameToggle = false Auto Hidden
@@ -299,12 +300,13 @@ Function ListSlaveStats(int index)
 
 	AddHeaderOption("Slave Stats")
 	AddTextOption("$PAHE_Submission", currentSlave.submission as Int, OPTION_FLAG_DISABLED)
-	AddTextOption("$PAHE_Combat", currentSlave.combat_training as Int, OPTION_FLAG_DISABLED)
 	AddTextOption("$PAHE_Anger", currentSlave.anger_training as Int, OPTION_FLAG_DISABLED)
+	AddTextOption("$PAHE_Combat", currentSlave.combat_training as Int, OPTION_FLAG_DISABLED)
 	AddTextOption("$PAHE_Respect", currentSlave.respect_training as Int, OPTION_FLAG_DISABLED)
+	AddTextOption("$PAHE_Pose", currentSlave.Pose_training as Int, OPTION_FLAG_DISABLED)
 	AddTextOption("$PAHE_Sex", currentSlave.sex_training as Int, OPTION_FLAG_DISABLED)
 	If debugToggle
-;		AddTextOption("$PAHE_Fear", currentSlave.fear_training as Int, OPTION_FLAG_DISABLED)
+		AddTextOption("$PAHE_Fear", currentSlave.fear_training as Int, OPTION_FLAG_DISABLED)
 		AddTextOption("Morality:", currentSlave.getActorRef().GetAV("Morality"), OPTION_FLAG_DISABLED)
 		AddTextOption("Current mood: ", currentSlave.mind.mood, OPTION_FLAG_DISABLED)
 		AddTextOption("Current state: ", currentSlave.behaviour, OPTION_FLAG_DISABLED)
@@ -313,7 +315,7 @@ Function ListSlaveStats(int index)
 
 	If debugToggle
 		AddEmptyOption()
-		maxSub_OID = AddTextOption("Max Submission:", currentSlave.GetActorRef().GetDisplayName())
+;		newClone_OID = AddTextOption("reClone Slave:", currentSlave.GetActorRef().GetDisplayName())
 		resetSlave_OID = AddTextOption("Reset Slave:", currentSlave.GetActorRef().GetDisplayName())
 		AddTextOption(StringUtil.Substring(currentSlave.GetActorRef().getVoiceType() + "", 12, StringUtil.Find(currentSlave.GetActorRef().getVoiceType() + "", " ", 12) - 12), "")
 	EndIf
@@ -390,10 +392,10 @@ Event OnOptionSelect(Int option)
 			ShowMessage("Close all menus to continue...", false)
 			Utility.wait(0.1)
 			currentSlave.resetSlave()
-		ElseIf (option == maxSub_OID)
-			currentSlave.submission = 100
-			forcedReset = currentSlave_OID
-			ForcePageReset()
+;		ElseIf (option == newClone_OID)
+;			ShowMessage("Close all menus to continue...", false)
+;			Utility.wait(0.1)
+;			currentSlave.clone()
 		Else
 			forcedReset = option
 			ForcePageReset()
