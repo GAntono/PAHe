@@ -2,8 +2,10 @@ Scriptname PAHBootstrapScript extends Quest
 
 PAHCore Property PAH Auto
 Perk Property PAHEnslavePerk Auto
-Perk Property PAHRprkEnslaveSleeping  Auto  
+;-->>requires nexus update>>Perk Property PAHRprkEnslaveSleeping  Auto  
 Perk Property PAHEnslaveParalyzedPerk Auto
+Perk Property PAHEnslaveFleeingPerk Auto
+
 ;# PAHCore
 Quest Property MQ101 Auto
 Quest Property PAHRebootQuest Auto
@@ -173,29 +175,22 @@ Spell Property PAHTestSpell Auto
 Spell Property PAHLeashToSpell Auto
 Spell Property PAHRebootSpell Auto
 
-bool bAltTested = false
-bool bAltHere =false
-
 Event OnInit()
 	RegisterForSingleUpdate(2.0)
-	debug.Trace("PAHR: ===== Looking to see if  'Alternate Start' is used, missing file is not an error if happens here =====")
-	form fTmp = Game.GetFormFromFile(0x0007a334,"Alternate Start - Live Another Life.esp") as form
-	bAltTested=true
-	if fTmp==none
-		debug.Trace("PAHR: 'Alternate Start' is not used")
-	else
-		bAltHere = true
-		debug.Trace("PAHR: 'Alternate Start' is used - Launching PAH")
-	endif
-	debug.Trace("PAHR: ===== Looking to see if  'Alternate Start' is used, end =====")
 EndEvent
 
 Event OnUpdate()
-;	if MQ101.IsObjectiveCompleted(50)
-	if MQ101.IsObjectiveCompleted(50) || bAltHere
-		Boot()
-	else
+;	If MQ101.IsObjectiveCompleted(50)
+;		Utility.Wait(0.2)
+;		Boot()
+;	else
+;		RegisterForSingleUpdate(2.0)
+;	EndIf
+	If PAH.IsRunning()
 		RegisterForSingleUpdate(2.0)
+	else
+		Utility.Wait(0.2)
+		Boot()
 	EndIf
 EndEvent
 
@@ -485,7 +480,8 @@ EndFunction
 
 Function AddItems()
 	Game.GetPlayer().AddPerk(PAHEnslavePerk)
-	Game.GetPlayer().AddPerk(PAHRprkEnslaveSleeping)
+;-->>requires nexus update>>	Game.GetPlayer().AddPerk(PAHRprkEnslaveSleeping)
+	Game.GetPlayer().AddPerk(PAHEnslaveFleeingPerk)	
 	Game.GetPlayer().AddPerk(PAHEnslaveParalyzedPerk)	
 	; Game.GetPlayer().AddItem(PAHWhip, 1)
 	; Game.GetPlayer().AddItem(PAHSlaveCollar, 1)

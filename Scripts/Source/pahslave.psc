@@ -8,6 +8,8 @@ ObjectReference Property ReleaseMarker Auto
 ReferenceAlias Property RelaseMarker  Auto
 
 Faction Property zbfFactionSlave Auto
+Faction Property zbfFactionGagAllowTalk Auto
+
 Faction Property PlayerFaction Auto
 Faction Property PlayerFollowerFaction Auto
 Faction Property PAHPlayerSlaveFaction Auto
@@ -112,7 +114,18 @@ Event AfterAssign()
 	__mind = None
 	manual_control_mode = false
 	actor_alias.AddToFaction(PAHPlayerSlaveFaction)
-	actor_alias.AddToFaction(zbfFactionSlave)
+	If (zbfFactionSlave == None)
+		zbfFactionSlave = Game.GetFormFromFile(0x0096AE, "ZaZAnimationPack.esm") As Faction
+	EndIf
+	If zbfFactionSlave != None
+		actor_alias.AddToFaction(zbfFactionSlave)
+	EndIf
+	If (zbfFactionGagAllowTalk == None)
+		zbfFactionGagAllowTalk = Game.GetFormFromFile(0x0221B5, "ZaZAnimationPack.esm") As Faction
+	EndIf
+	If zbfFactionGagAllowTalk != None
+		actor_alias.AddToFaction(zbfFactionGagAllowTalk)
+	EndIf
 ;why add the next line---for now i'm disabling this to prevent issues with home sweet home
 ;	actor_alias.AddToFaction(PlayerFaction)
 	actor_alias.AddToFaction(PAH.dunPrisonerFaction)
@@ -1464,19 +1477,23 @@ Function resetSlave()
 	behaviour = "tied"
 	EndBehaviour()
 
-	__actor_alias = (self as ReferenceAlias) as PAHActorAlias
-	manual_control_mode = false
 	If PAHPlayerSlaveFaction != None
 		actor_alias.AddToFaction(PAHPlayerSlaveFaction)
+	EndIf
+	If (zbfFactionSlave == None)
+		zbfFactionSlave = Game.GetFormFromFile(0x0096AE, "ZaZAnimationPack.esm") As Faction
 	EndIf
 	If zbfFactionSlave != None
 		actor_alias.AddToFaction(zbfFactionSlave)
 	EndIf
+	If (zbfFactionGagAllowTalk == None)
+		zbfFactionGagAllowTalk = Game.GetFormFromFile(0x0221B5, "ZaZAnimationPack.esm") As Faction
+	EndIf
+	If zbfFactionGagAllowTalk != None
+		actor_alias.AddToFaction(zbfFactionGagAllowTalk)
+	EndIf
 	If PAH.dunPrisonerFaction != None
 		actor_alias.AddToFaction(PAH.dunPrisonerFaction)
-	EndIf
-	If PAH.WINeverFillAliasesFaction != None
-		actor_alias.AddToFaction(PAH.WINeverFillAliasesFaction)
 	EndIf
 	If PAH.DLC1ThrallFaction != None
 		actor_alias.AddToFaction(PAH.DLC1ThrallFaction)

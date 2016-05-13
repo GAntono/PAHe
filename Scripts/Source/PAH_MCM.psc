@@ -3,7 +3,7 @@ Scriptname PAH_MCM extends SKI_ConfigBase
 PAHCore Property PAH Auto
 PAHBootstrapScript Property Reboot Auto
 
-String version = "0.1H RC 5.0"
+String version = "pahe lives on 5.5.1 beta"
 
 Int fleeToggle_OID
 Int healthToggle_OID
@@ -41,15 +41,15 @@ int Property runAwayValue = 60 Auto Hidden
 int Property severity = 100 Auto Hidden
 int Property followerTrainingEfficiency = 50 Auto Hidden
 
-float Property postRapeDelay = 30.0 Auto Hidden
+float Property postRapeDelay = 13.0 Auto Hidden
 
 bool Property fleeToggle = true Auto Hidden
 bool Property healthToggle = true Auto Hidden
 bool Property bleedOutToggle = true Auto Hidden
-bool Property leashToggle = false Auto Hidden
+bool Property leashToggle = true Auto Hidden
 bool Property renameToggle = false Auto Hidden
-bool Property statSpellToggle = false Auto Hidden
-bool Property showSlaveCountToggle = false Auto Hidden
+bool Property statSpellToggle = true Auto Hidden
+bool Property showSlaveCountToggle = true Auto Hidden
 bool jcInstalled = false
 bool _debugToggle = true
 bool Property debugToggle
@@ -75,10 +75,11 @@ Event OnGameReload()
 ;		PAH.RegisterForKey(hotKey)
 ;	EndIf
 
-	pageNames = new String[3]
-	pageNames[0] = "Options"
+	pageNames = new String[2]
+;	pageNames[0] = version + testVersion + " Options"
+	pageNames[0] = version + " Options"
 	pageNames[1] = "Slaves"
-	pageNames[2] = version
+;	pageNames[2] = version
 
 ;	MainQuest.Maintenance()
 EndEvent
@@ -86,10 +87,10 @@ EndEvent
 Event OnConfigOpen()
 	Pages = pageNames
 
-	Debug.trace("==========PAH Extension: Ignore cast errors==========")
+	Debug.trace("==========PAHE: Ignore cast errors==========")
 	jcInstalled = JContainers.isInstalled()
-	version = "0.1H RC 5.0"
-	Debug.trace("==========PAH Extension: End of cast errors==========")
+	version = "pahe lives on 5.5.1 beta"
+	Debug.trace("==========PAH E: End of cast errors==========")
 EndEvent
 
 event OnPageReset(string page)
@@ -280,12 +281,13 @@ Function ListSlaveStats(int index)
 
 	AddHeaderOption("Slave Stats")
 	AddTextOption("$PAHE_Submission", currentSlave.submission as Int, OPTION_FLAG_DISABLED)
-	AddTextOption("$PAHE_Combat", currentSlave.combat_training as Int, OPTION_FLAG_DISABLED)
 	AddTextOption("$PAHE_Anger", currentSlave.anger_training as Int, OPTION_FLAG_DISABLED)
+	AddTextOption("$PAHE_Combat", currentSlave.combat_training as Int, OPTION_FLAG_DISABLED)
 	AddTextOption("$PAHE_Respect", currentSlave.respect_training as Int, OPTION_FLAG_DISABLED)
+	AddTextOption("$PAHE_Pose", currentSlave.Pose_training as Int, OPTION_FLAG_DISABLED)
 	AddTextOption("$PAHE_Sex", currentSlave.sex_training as Int, OPTION_FLAG_DISABLED)
 	If debugToggle
-;		AddTextOption("$PAHE_Fear", currentSlave.fear_training as Int, OPTION_FLAG_DISABLED)
+		AddTextOption("$PAHE_Fear", currentSlave.fear_training as Int, OPTION_FLAG_DISABLED)
 		AddTextOption("Morality:", currentSlave.getActorRef().GetAV("Morality"), OPTION_FLAG_DISABLED)
 		AddTextOption("Current mood: ", currentSlave.mind.mood, OPTION_FLAG_DISABLED)
 		AddTextOption("Current state: ", currentSlave.behaviour, OPTION_FLAG_DISABLED)
