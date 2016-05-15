@@ -3,8 +3,8 @@ Scriptname PAH_MCM extends SKI_ConfigBase
 PAHCore Property PAH Auto
 PAHBootstrapScript Property Reboot Auto
 
-String version = "pahe lives on 6.0.3"
-String testVersion = "test8"
+String version = "pahe lives on 6.0.5"
+String testVersion = "test1"
 
 Int maxSub_OID
 
@@ -26,8 +26,9 @@ Int statSpellToggle_OID
 Int slaverRankSetting_OID
 Int debugToggle_OID
 Int resetSlaveList_OID
-Int newClone_OID
+Int teleportSlave_OID
 Int resetSlave_OID
+Int newClone_OID
 Int hotKey_OID
 Int modifierKey_OID
 Int whistleKey_OID
@@ -35,6 +36,7 @@ Int rename_OID
 Int renameToggle_OID
 Int alwaysAggroToggle_OID
 Int showSlaveCountToggle_OID
+Actor Property player Auto
 
 Int _hotkey = -1
 Int Property hotkey Hidden
@@ -312,11 +314,15 @@ Function ListSlaveStats(int index)
 		AddTextOption("Current state: ", currentSlave.behaviour, OPTION_FLAG_DISABLED)
 	EndIf
 	rename_OID = AddTextOption("", "Rename " + currentSlave.GetActorRef().getDisplayName())
+	if !player
+		player = Game.GetPlayer()
+	EndIf
 
 	If debugToggle
 		AddEmptyOption()
-;		newClone_OID = AddTextOption("reClone Slave:", currentSlave.GetActorRef().GetDisplayName())
+;		teleportSlave_OID = AddTextOption("teleport Slave to player:", currentSlave.GetActorRef().GetDisplayName())
 		resetSlave_OID = AddTextOption("Reset Slave:", currentSlave.GetActorRef().GetDisplayName())
+;		newClone_OID = AddTextOption("reClone Slave:", currentSlave.GetActorRef().GetDisplayName())
 		AddTextOption(StringUtil.Substring(currentSlave.GetActorRef().getVoiceType() + "", 12, StringUtil.Find(currentSlave.GetActorRef().getVoiceType() + "", " ", 12) - 12), "")
 	EndIf
 EndFunction
@@ -388,6 +394,10 @@ Event OnOptionSelect(Int option)
 				forcedReset = currentSlave_OID
 				ForcePageReset()
 			EndIf
+;		ElseIf (option == teleportSlave_OID)
+;			ShowMessage("Close all menus to continue...", false)
+;			Utility.wait(0.1)
+;			currentSlave.MoveTo(player)
 		ElseIf (option == resetSlave_OID)
 			ShowMessage("Close all menus to continue...", false)
 			Utility.wait(0.1)

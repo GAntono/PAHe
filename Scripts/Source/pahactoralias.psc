@@ -4,7 +4,11 @@ Scriptname PAHActorAlias extends ReferenceAlias
 PAHCore Property PAH Auto
 
 Actor Property actor_stub Auto
+
+;*****
+; remnants of the old mule system improperly named to be fixed later*********
 PAHSlave Property slave_stub Auto
+;*****
 PAHSlaveMind Property mind_stub Auto
 
 Faction Property PAHAccompanyingPlayer Auto
@@ -63,9 +67,12 @@ PAHSlave Property slave
 	PAHSlave Function get()
 		if __slave == None
 			__slave = (self as ReferenceAlias) as PAHSlave
+;****************************
+;			the following is remnants of the backpack system improperly named to be fixed later*********
 			if __slave == None
 				__slave = slave_stub
 			endif
+;********************************
 		endif
 		return __slave
 	EndFunction

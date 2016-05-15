@@ -2,7 +2,7 @@ Scriptname PAHBootstrapScript extends Quest
 
 PAHCore Property PAH Auto
 Perk Property PAHEnslavePerk Auto
-Perk Property PAHEnslaveCancelPerk Auto
+; Perk Property PAHEnslaveCancelPerk Auto
 
 ;# PAHCore
 Quest Property MQ101 Auto
@@ -14,15 +14,20 @@ Quest Property PAHPersonalityEvenToned Auto
 ReferenceAlias[] Property slave_aliases Auto
 ReferenceAlias[] Property target_aliases Auto
 ReferenceAlias[] Property reboot_aliases Auto
-Actor[] Property backpack_mules Auto
+
+;need to clean the backpacks from the master file -- later***********
+;Actor[] Property backpack_mules Auto
+
 PAHClonifierBaseScript Property clonifier Auto
 
 PAHPersonalityDefinition[] Property personality_definitions Auto
 PAHPersonalityDefinition Property default_male_personality_definition Auto
 PAHPersonalityDefinition Property default_female_personality_definition Auto
 
-Actor Property actor_stub Auto
+ Actor Property actor_stub Auto
+;*************** remnants of the backpack system improperly named to be fixed later*********
 ReferenceAlias Property pah_stub Auto
+;**********
 
 Faction Property PAHCleaned Auto
 
@@ -378,8 +383,10 @@ Function SetProperties()
 		actor_alias = PAH.slave_aliases[i] as PAHActorAlias
 
 		actor_alias.PAH = PAH
+;*************** remnants of the backpack system improperly named to be fixed later*********
 		actor_alias.actor_stub = actor_stub
 		actor_alias.slave_stub = pah_stub as PAHSlave
+;************
 		actor_alias.mind_stub = pah_stub as PAHSlaveMind
 		actor_alias.PAHAccompanyingPlayer = PAHAccompanyingPlayer
 		actor_alias.PAHAAUseCOPackage = PAHAAUseCOPackage
